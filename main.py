@@ -9,16 +9,18 @@ import tensorflow as tf
 
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
-flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
+flags.DEFINE_float("learning_rate", 0.0002, "Learning rate for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
 flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
-flags.DEFINE_integer("input_width", 108, "The size of image to use (will be center cropped) [108]")
-flags.DEFINE_integer("input_height", 108, "The size of image to use (will be center cropped) [108]")
-flags.DEFINE_integer("output_height", 64, "The size of the output images to produce [64]")
-flags.DEFINE_integer("output_width", 64, "The size of the output images to produce [64]")
-flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
-flags.DEFINE_string("dataset", "celebA", "The name of dataset [celebA, mnist, lsun]")
+flags.DEFINE_integer("input_width", 28, "The width of movies to use (will be center cropped) [28]")
+flags.DEFINE_integer("input_height", 28, "The height of movies to use (will be center cropped) [28]")
+flags.DEFINE_integer("input_length", 5, "The length of movies to use (will be center cropped) [5]")
+flags.DEFINE_integer("output_height", 28, "The height of the output movies to produce [28]")
+flags.DEFINE_integer("output_width", 28, "The width of the output movies to produce [28]")
+flags.DEFINE_integer("output_length", 5, "The length of the output movies to produce [5]")
+flags.DEFINE_integer("c_dim", 1, "Dimension of image color. [1]")
+flags.DEFINE_string("dataset", "mnist", "The name of dataset [celebA, mnist, lsun]")
 flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
@@ -40,35 +42,22 @@ def main(_):
   run_config.gpu_options.allow_growth=True
 
   with tf.Session(config=run_config) as sess:
-    if FLAGS.dataset == 'mnist':
-      dcgan = DCGAN(
-          sess,
-          input_width=FLAGS.input_width,
-          input_height=FLAGS.input_height,
-          output_width=FLAGS.output_width,
-          output_height=FLAGS.output_height,
-          batch_size=FLAGS.batch_size,
-          y_dim=10,
-          c_dim=1,
-          dataset_name=FLAGS.dataset,
-          input_fname_pattern=FLAGS.input_fname_pattern,
-          is_crop=FLAGS.is_crop,
-          checkpoint_dir=FLAGS.checkpoint_dir,
-          sample_dir=FLAGS.sample_dir)
-    else:
-      dcgan = DCGAN(
-          sess,
-          input_width=FLAGS.input_width,
-          input_height=FLAGS.input_height,
-          output_width=FLAGS.output_width,
-          output_height=FLAGS.output_height,
-          batch_size=FLAGS.batch_size,
-          c_dim=FLAGS.c_dim,
-          dataset_name=FLAGS.dataset,
-          input_fname_pattern=FLAGS.input_fname_pattern,
-          is_crop=FLAGS.is_crop,
-          checkpoint_dir=FLAGS.checkpoint_dir,
-          sample_dir=FLAGS.sample_dir)
+    dcgan = DCGAN(
+        sess,
+        input_width=FLAGS.input_width,
+        input_height=FLAGS.input_height,
+        input_length=FLAGS.input_length,
+        output_width=FLAGS.output_width,
+        output_height=FLAGS.output_height,
+        output_length=FLAGS.output_length,
+        batch_size=FLAGS.batch_size,
+        y_dim=10,
+        c_dim=1,
+        dataset_name=FLAGS.dataset,
+        input_fname_pattern=FLAGS.input_fname_pattern,
+        is_crop=FLAGS.is_crop,
+        checkpoint_dir=FLAGS.checkpoint_dir,
+        sample_dir=FLAGS.sample_dir)
 
     if FLAGS.is_train:
       dcgan.train(FLAGS)

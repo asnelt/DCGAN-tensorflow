@@ -10,10 +10,10 @@ from ops import *
 from utils import *
 
 class DCGAN(object):
-  def __init__(self, sess, input_height=28, input_width=28, input_length=5, is_crop=True,
-         batch_size=64, sample_num = 64, output_height=28, output_width=28, output_length=5,
+  def __init__(self, sess, input_height=28, input_width=28, input_length=4, is_crop=True,
+         batch_size=64, sample_num = 64, output_height=28, output_width=28, output_length=4,
          y_dim=10, z_dim=100, gf_dim=64, df_dim=64,
-         gfc_dim=1024, dfc_dim=1024, c_dim=1, dataset_name='default',
+         gfc_dim=1024, dfc_dim=1024, dataset_name='default',
          input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
     """
 
@@ -26,11 +26,10 @@ class DCGAN(object):
       df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
       gfc_dim: (optional) Dimension of gen units for for fully connected layer. [1024]
       dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
-      c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
     """
     self.sess = sess
     self.is_crop = is_crop
-    self.is_grayscale = (c_dim == 1)
+    self.is_grayscale = True
 
     self.batch_size = batch_size
     self.sample_num = sample_num
@@ -51,8 +50,6 @@ class DCGAN(object):
     self.gfc_dim = gfc_dim
     self.dfc_dim = dfc_dim
 
-    self.c_dim = c_dim
-
     # batch normalization : deals with poor initialization helps gradient flow
     self.d_bn1 = batch_norm(name='d_bn1')
     self.d_bn2 = batch_norm(name='d_bn2')
@@ -69,8 +66,7 @@ class DCGAN(object):
   def build_model(self):
     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
 
-    image_dims = [self.output_height, self.output_width, self.c_dim]
-
+    image_dims = [self.output_height, self.output_width, self.output_length]
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
     self.sample_inputs = tf.placeholder(
@@ -227,7 +223,7 @@ class DCGAN(object):
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
       x = conv_cond_concat(image, yb)
 
-      h0 = lrelu(conv2d(x, self.c_dim + self.y_dim, name='d_h0_conv'))
+      h0 = lrelu(conv2d(x, self.output_length + self.y_dim, name='d_h0_conv'))
       h0 = conv_cond_concat(h0, yb)
 
       h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
@@ -266,7 +262,7 @@ class DCGAN(object):
       h2 = conv_cond_concat(h2, yb)
 
       return tf.nn.sigmoid(
-          deconv2d(h2, [self.batch_size, s_h, s_w, self.c_dim], name='g_h3'))
+          deconv2d(h2, [self.batch_size, s_h, s_w, self.output_length], name='g_h3'))
 
   def sampler(self, z, y=None):
     with tf.variable_scope("generator") as scope:
@@ -292,7 +288,7 @@ class DCGAN(object):
           deconv2d(h1, [self.batch_size, s_h2, s_w2, self.gf_dim * 2], name='g_h2'), train=False))
       h2 = conv_cond_concat(h2, yb)
 
-      return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.c_dim], name='g_h3'))
+      return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_length], name='g_h3'))
 
   def load_mnist(self):
     data_dir = os.path.join("./data", self.dataset_name)
@@ -315,20 +311,37 @@ class DCGAN(object):
 
     trY = np.asarray(trY)
     teY = np.asarray(teY)
-    
+
     X = np.concatenate((trX, teX), axis=0)
     y = np.concatenate((trY, teY), axis=0)
-    
+
+    # Populate length dimension with successor images
+    seq = np.zeros(shape=(X.shape[0], X.shape[1], X.shape[2], self.output_length))
+    seq[:, :, :, 0] = np.squeeze(X)
+    y_int = np.round(y).astype(int)
+    for l in range(self.output_length-1):
+      for i in range(max(y_int)):
+        ind = np.where(y_int==i)[0]
+        num_next = int((i+l+1)%max(y_int))
+        ind_next = np.where(y_int==num_next)[0]
+        if len(ind_next) >= len(ind):
+          ind_next = ind_next[0:len(ind)]
+        else:
+          ind_next = np.concatenate((ind_next, ind_next[0:(len(ind)-len(ind_next))]))
+        seq[ind, :, :, l+1] = seq[ind_next, :, :, l]
+    X = seq
+
+    # Shuffle images
     seed = 547
     np.random.seed(seed)
     np.random.shuffle(X)
     np.random.seed(seed)
     np.random.shuffle(y)
-    
+ 
     y_vec = np.zeros((len(y), self.y_dim), dtype=np.float)
     for i, label in enumerate(y):
       y_vec[i, int(y[i])] = 1.0
-    
+ 
     return X/255.,y_vec
 
   @property

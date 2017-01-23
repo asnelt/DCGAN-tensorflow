@@ -320,9 +320,9 @@ class DCGAN(object):
     seq[:, :, :, 0] = np.squeeze(X)
     y_int = np.round(y).astype(int)
     for l in range(self.output_length-1):
-      for i in range(max(y_int)):
+      for i in range(max(y_int)+1):
         ind = np.where(y_int==i)[0]
-        num_next = int((i+l+1)%max(y_int))
+        num_next = int((i+l+1)%(max(y_int)+1))
         ind_next = np.where(y_int==num_next)[0]
         if len(ind_next) >= len(ind):
           ind_next = ind_next[0:len(ind)]

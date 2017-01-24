@@ -15,10 +15,10 @@ flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
 flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 flags.DEFINE_integer("input_width", 28, "The width of movies to use (will be center cropped) [28]")
 flags.DEFINE_integer("input_height", 28, "The height of movies to use (will be center cropped) [28]")
-flags.DEFINE_integer("input_length", 3, "The length of movies to use (will be center cropped) [5]")
+flags.DEFINE_integer("input_depth", 3, "The length of movies to use (will be center cropped) [5]")
 flags.DEFINE_integer("output_height", 28, "The height of the output movies to produce [28]")
 flags.DEFINE_integer("output_width", 28, "The width of the output movies to produce [28]")
-flags.DEFINE_integer("output_length", 3, "The length of the output movies to produce [5]")
+flags.DEFINE_integer("output_depth", 3, "The length of the output movies to produce [5]")
 flags.DEFINE_string("dataset", "mnist", "The name of dataset [celebA, mnist, lsun]")
 flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
@@ -45,10 +45,10 @@ def main(_):
         sess,
         input_width=FLAGS.input_width,
         input_height=FLAGS.input_height,
-        input_length=FLAGS.input_length,
+        input_depth=FLAGS.input_depth,
         output_width=FLAGS.output_width,
         output_height=FLAGS.output_height,
-        output_length=FLAGS.output_length,
+        output_depth=FLAGS.output_depth,
         batch_size=FLAGS.batch_size,
         y_dim=10,
         dataset_name=FLAGS.dataset,

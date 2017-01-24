@@ -10,8 +10,8 @@ from ops import *
 from utils import *
 
 class DCGAN(object):
-  def __init__(self, sess, input_height=28, input_width=28, input_length=3, is_crop=True,
-         batch_size=64, sample_num = 64, output_height=28, output_width=28, output_length=3,
+  def __init__(self, sess, input_height=28, input_width=28, input_depth=3, is_crop=True,
+         batch_size=64, sample_num = 64, output_height=28, output_width=28, output_depth=3,
          y_dim=10, z_dim=100, gf_dim=64, df_dim=64,
          gfc_dim=1024, dfc_dim=1024, dataset_name='default',
          input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
@@ -36,10 +36,10 @@ class DCGAN(object):
 
     self.input_height = input_height
     self.input_width = input_width
-    self.input_length = input_length
+    self.input_depth = input_depth
     self.output_height = output_height
     self.output_width = output_width
-    self.output_length = output_length
+    self.output_depth = output_depth
 
     self.y_dim = y_dim
     self.z_dim = z_dim
@@ -66,7 +66,7 @@ class DCGAN(object):
   def build_model(self):
     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
 
-    image_dims = [self.output_height, self.output_width, self.output_length]
+    image_dims = [self.output_height, self.output_width, self.output_depth]
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
     self.sample_inputs = tf.placeholder(
@@ -223,7 +223,7 @@ class DCGAN(object):
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
       x = conv_cond_concat(image, yb)
 
-      h0 = lrelu(conv2d(x, self.output_length + self.y_dim, name='d_h0_conv'))
+      h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
       h0 = conv_cond_concat(h0, yb)
 
       h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
@@ -262,7 +262,7 @@ class DCGAN(object):
       h2 = conv_cond_concat(h2, yb)
 
       return tf.nn.sigmoid(
-          deconv2d(h2, [self.batch_size, s_h, s_w, self.output_length], name='g_h3'))
+          deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
   def sampler(self, z, y=None):
     with tf.variable_scope("generator") as scope:
@@ -288,7 +288,7 @@ class DCGAN(object):
           deconv2d(h1, [self.batch_size, s_h2, s_w2, self.gf_dim * 2], name='g_h2'), train=False))
       h2 = conv_cond_concat(h2, yb)
 
-      return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_length], name='g_h3'))
+      return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
   def load_mnist(self):
     data_dir = os.path.join("./data", self.dataset_name)
@@ -316,10 +316,10 @@ class DCGAN(object):
     y = np.concatenate((trY, teY), axis=0)
 
     # Populate length dimension with successor images
-    seq = np.zeros(shape=(X.shape[0], X.shape[1], X.shape[2], self.output_length))
+    seq = np.zeros(shape=(X.shape[0], X.shape[1], X.shape[2], self.output_depth))
     seq[:, :, :, 0] = np.squeeze(X)
     y_int = np.round(y).astype(int)
-    for l in range(self.output_length-1):
+    for l in range(self.output_depth-1):
       for i in range(max(y_int)+1):
         ind = np.where(y_int==i)[0]
         num_next = int((i+l+1)%(max(y_int)+1))

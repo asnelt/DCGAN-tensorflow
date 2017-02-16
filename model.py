@@ -5,14 +5,14 @@ from glob import glob
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
-
+import matplotlib.pyplot as plt
 from ops import *
 from utils import *
 
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_width=1, input_depth=1, is_crop=True,
          batch_size=64, sample_num = 64, output_height=28, output_width=1, output_depth=1,
-         y_dim=10, z_dim=100, gf_dim=64, df_dim=64,
+         y_dim=2, z_dim=100, gf_dim=64, df_dim=64,
          gfc_dim=1024, dfc_dim=1024, dataset_name='default',
          input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
     """
@@ -31,7 +31,6 @@ class DCGAN(object):
     self.is_crop = is_crop
     self.is_grayscale = True
 
-    print(is_crop)
     
     self.batch_size = batch_size
     self.sample_num = sample_num
@@ -68,8 +67,7 @@ class DCGAN(object):
   def build_model(self):
     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
 
-    image_dims = [self.output_height, self.output_width, self.output_depth]
-    print(image_dims)
+    image_dims = [self.output_height, self.output_width, self.output_depth] 
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
     self.sample_inputs = tf.placeholder(
@@ -157,10 +155,9 @@ class DCGAN(object):
       for idx in xrange(0, batch_idxs):
         batch_images = data_X[idx*config.batch_size:(idx+1)*config.batch_size]
         batch_labels = data_y[idx*config.batch_size:(idx+1)*config.batch_size]
-        print(batch_images.shape)
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
-
+        
         # Update D network
         _, summary_str = self.sess.run([d_optim, self.d_sum],
           feed_dict={ 
@@ -243,7 +240,7 @@ class DCGAN(object):
     with tf.variable_scope("generator") as scope:
       s_h, s_w = self.output_height, self.output_width
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
-      s_w2, s_w4 = int(s_w/2), int(s_w/4)
+      s_w2, s_w4 = int(s_w), int(s_w)
 
       # yb = tf.expand_dims(tf.expand_dims(y, 1),2)
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
@@ -252,7 +249,7 @@ class DCGAN(object):
       h0 = tf.nn.relu(
           self.g_bn0(linear(z, self.gfc_dim, 'g_h0_lin')))
       h0 = tf.concat_v2([h0, y], 1)
-
+      
       h1 = tf.nn.relu(self.g_bn1(
           linear(h0, self.gf_dim*2*s_h4*s_w4, 'g_h1_lin')))
       h1 = tf.reshape(h1, [self.batch_size, s_h4, s_w4, self.gf_dim * 2])
@@ -272,7 +269,7 @@ class DCGAN(object):
 
       s_h, s_w = self.output_height, self.output_width
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
-      s_w2, s_w4 = int(s_w/2), int(s_w/4)
+      s_w2, s_w4 = int(s_w), int(s_w)
 
       # yb = tf.reshape(y, [-1, 1, 1, self.y_dim])
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
@@ -293,34 +290,38 @@ class DCGAN(object):
       return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
   def load_mnist(self):
-    #we load and slice the images to build 1D samples
-    data_dir = os.path.join("./data", self.dataset_name)
+      
+    #create artificial data
+    num_samples = 20000
+    num_bins = 28
+    firing_rate = 10
+    margin = 0
+    peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
+    peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)
+    t = np.arange(num_bins)
+    X =np.zeros((2*num_samples,num_bins,1,1))
+    y =np.zeros((2*num_samples,self.y_dim))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False)
     
-    fd = open(os.path.join(data_dir,'train-images-idx3-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    trX = loaded[16:].reshape((60000,28,28,1)).astype(np.float)
 
-    fd = open(os.path.join(data_dir,'train-labels-idx1-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    trY = loaded[8:].reshape((60000)).astype(np.float)
+    for ind in range(int(num_samples)):
+        r1 = np.random.poisson(firing_rate*np.exp(-(t-peaks1[ind])**2), (1,num_bins))
+        r2 = np.random.poisson(firing_rate*np.exp(-(t-peaks2[ind])**2), (1,num_bins))
+        r = r1 + r2
+        X[ind,:,0,0] = r
+        y[ind,:] = [1,0]
+        if ind%100==0:
+            ax1.plot(r[0])
 
-    fd = open(os.path.join(data_dir,'t10k-images-idx3-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    teX = loaded[16:].reshape((10000,28,28,1)).astype(np.float)
-
-    fd = open(os.path.join(data_dir,'t10k-labels-idx1-ubyte'))
-    loaded = np.fromfile(file=fd,dtype=np.uint8)
-    teY = loaded[8:].reshape((10000)).astype(np.float)
+    peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin+1,num_samples)
+    for ind in range(int(num_samples+1),int(2*num_samples)):
+        r = np.random.poisson(firing_rate*np.exp(-(t-peaks1[ind-num_samples])**2), (1,num_bins))
+        X[ind,:,0,0] = r
+        y[ind,:] = [0,1]
+        if ind%100==0:
+            ax2.plot(r[0])
     
-    trY = np.asarray(trY)
-    teY = np.asarray(teY)
-
-    X = np.concatenate((trX, teX), axis=0)
-    X = X[:,:,[14],:]
-    y = np.concatenate((trY, teY), axis=0)
-    
-    
-   
+    plt.show()
     # Shuffle images
     seed = 547
     np.random.seed(seed)
@@ -328,10 +329,9 @@ class DCGAN(object):
     np.random.seed(seed)
     np.random.shuffle(y)
  
-    y_vec = np.zeros((len(y), self.y_dim), dtype=np.float)
-    for i, label in enumerate(y):
-      y_vec[i, int(y[i])] = 1.0
- 
+    y_vec = y
+    
+  
     return X/255.,y_vec
 
   @property

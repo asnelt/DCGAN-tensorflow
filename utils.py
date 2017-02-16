@@ -8,6 +8,7 @@ import random
 import pprint
 import scipy.misc
 import numpy as np
+import matplotlib.pyplot as plt
 from time import gmtime, strftime
 
 pp = pprint.PrettyPrinter()
@@ -155,22 +156,27 @@ def visualize(sess, dcgan, config, option):
     save_images(samples, [8, 8], './samples/test_%s.png' % strftime("%Y-%m-%d %H:%M:%S", gmtime()))
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
-    for idx in range(100):
+    for idx in range(2):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
       for kdx, z in enumerate(z_sample):
         z[idx] = values[kdx]
 
       if config.dataset == "mnist":
-        y = np.random.choice(10, config.batch_size)
-        y_one_hot = np.zeros((config.batch_size, 10))
+        y = np.random.choice(2, config.batch_size)
+        y_one_hot = np.zeros((config.batch_size, 2))
         y_one_hot[np.arange(config.batch_size), y] = 1
 
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
       else:
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
 
-      save_images(samples, [8, 8], './samples/test_arange_%s.png' % (idx))
+      print(samples.shape)
+      aux = samples[1,:,0,:]
+      print(aux.shape)  
+      plt.plot(samples[1,:,0,:])
+      plt.show()
+      #save_images(samples, [8, 8], './samples/test_arange_%s.png' % (idx))
   elif option == 2:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in [random.randint(0, 99) for _ in range(100)]:

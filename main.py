@@ -50,7 +50,7 @@ def main(_):
         output_height=FLAGS.output_height,
         output_depth=FLAGS.output_depth,
         batch_size=FLAGS.batch_size,
-        y_dim=10,
+        y_dim=2,
         dataset_name=FLAGS.dataset,
         input_fname_pattern=FLAGS.input_fname_pattern,
         is_crop=FLAGS.is_crop,

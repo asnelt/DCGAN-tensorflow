@@ -291,6 +291,7 @@ class DCGAN(object):
       return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
   def load_mnist(self):
+    #we load and slice the images to build 1D samples
     data_dir = os.path.join("./data", self.dataset_name)
     
     fd = open(os.path.join(data_dir,'train-images-idx3-ubyte'))

@@ -10,8 +10,8 @@ from ops import *
 from utils import *
 
 class DCGAN(object):
-  def __init__(self, sess, input_height=28, input_width=28, input_depth=3, is_crop=True,
-         batch_size=64, sample_num = 64, output_height=28, output_width=28, output_depth=3,
+  def __init__(self, sess, input_height=28, input_width=1, input_depth=1, is_crop=True,
+         batch_size=64, sample_num = 64, output_height=28, output_width=1, output_depth=1,
          y_dim=10, z_dim=100, gf_dim=64, df_dim=64,
          gfc_dim=1024, dfc_dim=1024, dataset_name='default',
          input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
@@ -31,6 +31,8 @@ class DCGAN(object):
     self.is_crop = is_crop
     self.is_grayscale = True
 
+    print(is_crop)
+    
     self.batch_size = batch_size
     self.sample_num = sample_num
 
@@ -67,6 +69,7 @@ class DCGAN(object):
     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
 
     image_dims = [self.output_height, self.output_width, self.output_depth]
+    print(image_dims)
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
     self.sample_inputs = tf.placeholder(
@@ -120,7 +123,6 @@ class DCGAN(object):
     """Train DCGAN"""
     data_X, data_y = self.load_mnist()
     #np.random.shuffle(data)
-
     d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
               .minimize(self.d_loss, var_list=self.d_vars)
     g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
@@ -155,7 +157,7 @@ class DCGAN(object):
       for idx in xrange(0, batch_idxs):
         batch_images = data_X[idx*config.batch_size:(idx+1)*config.batch_size]
         batch_labels = data_y[idx*config.batch_size:(idx+1)*config.batch_size]
-
+        print(batch_images.shape)
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
 
@@ -309,29 +311,16 @@ class DCGAN(object):
     fd = open(os.path.join(data_dir,'t10k-labels-idx1-ubyte'))
     loaded = np.fromfile(file=fd,dtype=np.uint8)
     teY = loaded[8:].reshape((10000)).astype(np.float)
-
+    
     trY = np.asarray(trY)
     teY = np.asarray(teY)
 
     X = np.concatenate((trX, teX), axis=0)
+    X = X[:,:,[14],:]
     y = np.concatenate((trY, teY), axis=0)
-
-    # Populate length dimension with successor images
-    seq = np.zeros(shape=(X.shape[0], X.shape[1], X.shape[2], self.output_depth))
-    seq[:, :, :, 0] = np.squeeze(X)
-    y_int = np.round(y).astype(int)
-    for l in range(self.output_depth-1):
-      for i in range(max(y_int)+1):
-        ind = np.where(y_int==i)[0]
-        num_next = int((i+l+1)%(max(y_int)+1))
-        ind_next = np.where(y_int==num_next)[0]
-        if len(ind_next) >= len(ind):
-          ind_next = ind_next[0:len(ind)]
-        else:
-          ind_next = np.concatenate((ind_next, ind_next[0:(len(ind)-len(ind_next))]))
-        seq[ind, :, :, l+1] = seq[ind_next, :, :, l]
-    X = seq
-
+    
+    
+   
     # Shuffle images
     seed = 547
     np.random.seed(seed)

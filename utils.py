@@ -156,7 +156,8 @@ def visualize(sess, dcgan, config, option):
     save_images(samples, [8, 8], './samples/test_%s.png' % strftime("%Y-%m-%d %H:%M:%S", gmtime()))
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
-    for idx in range(2):
+    
+    for idx in range(100):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
       for kdx, z in enumerate(z_sample):
@@ -172,9 +173,8 @@ def visualize(sess, dcgan, config, option):
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
 
       print(samples.shape)
-      aux = samples[1,:,0,:]
-      print(aux.shape)  
-      plt.plot(samples[1,:,0,:])
+      aux = samples[:,:,0,0]
+      plt.plot(np.transpose(aux))
       plt.show()
       #save_images(samples, [8, 8], './samples/test_arange_%s.png' % (idx))
   elif option == 2:

@@ -65,26 +65,35 @@ class DCGAN(object):
     self.build_model()
 
   def build_model(self):
+    #labels
     self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
-
+    
     image_dims = [self.output_height, self.output_width, self.output_depth] 
+    #real samples    
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
+    #fake samples
     self.sample_inputs = tf.placeholder(
       tf.float32, [self.sample_num] + image_dims, name='sample_inputs')
 
     inputs = self.inputs
     sample_inputs = self.sample_inputs
 
+    #z
     self.z = tf.placeholder(
       tf.float32, [None, self.z_dim], name='z')
     self.z_sum = tf.summary.histogram("z", self.z)
 
+    #generator
     self.G = self.generator(self.z, self.y)
+    
+    #discriminator on the real samples 
     self.D, self.D_logits = \
         self.discriminator(inputs, self.y, reuse=False)
 
     self.sampler = self.sampler(self.z, self.y)
+    
+    #discriminator on the samples produced by G
     self.D_, self.D_logits_ = \
         self.discriminator(self.G, self.y, reuse=True)
 
@@ -119,17 +128,22 @@ class DCGAN(object):
 
   def train(self, config):
     """Train DCGAN"""
+    #get data
     data_X, data_y = self.load_mnist()
-    #np.random.shuffle(data)
+    
+    #define optimizer
     d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
               .minimize(self.d_loss, var_list=self.d_vars)
     g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
               .minimize(self.g_loss, var_list=self.g_vars)
+    
+    #initizialize variables              
     try:
       tf.global_variables_initializer().run()
     except:
       tf.initialize_all_variables().run()
 
+      
     self.g_sum = tf.summary.merge([self.z_sum, self.d__sum,
       self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
     self.d_sum = tf.summary.merge(
@@ -290,12 +304,16 @@ class DCGAN(object):
       return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
   def load_mnist(self):
-      
+    
+    #we load and slice the images to build 1D samples
+    
     #create artificial data
-    num_samples = 20000
+    num_samples = 40000
     num_bins = 28
     firing_rate = 10
     margin = 0
+    noise = 0.1
+    std_resp = 2
     peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
     peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)
     t = np.arange(num_bins)
@@ -305,8 +323,8 @@ class DCGAN(object):
     
 
     for ind in range(int(num_samples)):
-        r1 = np.random.poisson(firing_rate*np.exp(-(t-peaks1[ind])**2), (1,num_bins))
-        r2 = np.random.poisson(firing_rate*np.exp(-(t-peaks2[ind])**2), (1,num_bins))
+        r1 = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+        r2 = firing_rate*np.exp(-(t-peaks2[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
         r = r1 + r2
         X[ind,:,0,0] = r
         y[ind,:] = [1,0]
@@ -315,13 +333,14 @@ class DCGAN(object):
 
     peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin+1,num_samples)
     for ind in range(int(num_samples+1),int(2*num_samples)):
-        r = np.random.poisson(firing_rate*np.exp(-(t-peaks1[ind-num_samples])**2), (1,num_bins))
+        r = firing_rate*np.exp(-(t-peaks1[ind-num_samples])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
         X[ind,:,0,0] = r
         y[ind,:] = [0,1]
         if ind%100==0:
             ax2.plot(r[0])
     
     plt.show()
+    y_vec = y
     # Shuffle images
     seed = 547
     np.random.seed(seed)
@@ -329,10 +348,10 @@ class DCGAN(object):
     np.random.seed(seed)
     np.random.shuffle(y)
  
-    y_vec = y
+    
     
   
-    return X/255.,y_vec
+    return X/X.max(),y_vec
 
   @property
   def model_dir(self):

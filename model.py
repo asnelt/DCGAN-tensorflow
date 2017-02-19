@@ -1,7 +1,6 @@
 from __future__ import division
 import os
 import time
-from glob import glob
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
@@ -35,6 +34,7 @@ class DCGAN(object):
     self.batch_size = batch_size
     self.sample_num = sample_num
 
+    #dimensions' sizes
     self.input_height = input_height
     self.input_width = input_width
     self.input_depth = input_depth
@@ -72,58 +72,67 @@ class DCGAN(object):
     #real samples    
     self.inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
+    inputs = self.inputs
     #fake samples
     self.sample_inputs = tf.placeholder(
       tf.float32, [self.sample_num] + image_dims, name='sample_inputs')
 
-    inputs = self.inputs
-    sample_inputs = self.sample_inputs
+    
+ 
 
     #z
     self.z = tf.placeholder(
       tf.float32, [None, self.z_dim], name='z')
+    #z saved for tensorboard
     self.z_sum = tf.summary.histogram("z", self.z)
 
     #generator
     self.G = self.generator(self.z, self.y)
+    #sampler this is used to get samples from G
+    self.sampler = self.sampler(self.z, self.y)
     
     #discriminator on the real samples 
     self.D, self.D_logits = \
         self.discriminator(inputs, self.y, reuse=False)
-
-    self.sampler = self.sampler(self.z, self.y)
-    
     #discriminator on the samples produced by G
     self.D_, self.D_logits_ = \
         self.discriminator(self.G, self.y, reuse=True)
-
+        
+    #save outputs from discriminator (real and fake) and generator for tensorboard
     self.d_sum = tf.summary.histogram("d", self.D)
     self.d__sum = tf.summary.histogram("d_", self.D_)
     self.G_sum = tf.summary.image("G", self.G)
 
+    #loss functions
+    #loss D real samples
     self.d_loss_real = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
         logits=self.D_logits, targets=tf.ones_like(self.D)))
+    #loss D fake samples
     self.d_loss_fake = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
         logits=self.D_logits_, targets=tf.zeros_like(self.D_)))
+    #loss G
     self.g_loss = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
         logits=self.D_logits_, targets=tf.ones_like(self.D_)))
 
+    #save D losses for tensorboard
     self.d_loss_real_sum = tf.summary.scalar("d_loss_real", self.d_loss_real)
-    self.d_loss_fake_sum = tf.summary.scalar("d_loss_fake", self.d_loss_fake)
-                          
+    self.d_loss_fake_sum = tf.summary.scalar("d_loss_fake", self.d_loss_fake)                      
     self.d_loss = self.d_loss_real + self.d_loss_fake
-
-    self.g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
     self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
-
+    
+    #save G loss for tensorboard
+    self.g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
+    
+    #get all variables
     t_vars = tf.trainable_variables()
-
+    #keep D and G variables
     self.d_vars = [var for var in t_vars if 'd_' in var.name]
     self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
+    #save training
     self.saver = tf.train.Saver()
 
   def train(self, config):
@@ -143,30 +152,35 @@ class DCGAN(object):
     except:
       tf.initialize_all_variables().run()
 
-      
+    #put all G variables saved for tensorboard together
     self.g_sum = tf.summary.merge([self.z_sum, self.d__sum,
       self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
+    #put all D variables saved for tensorboard together
     self.d_sum = tf.summary.merge(
         [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
-    self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
-
-    sample_z = np.random.uniform(-1, 1, size=(self.sample_num , self.z_dim))
     
+    #save variables in ./logs
+    self.writer = tf.summary.FileWriter("./logs2", self.sess.graph)
+
+    #samples for visualization (will be used for self.sampler)
+    sample_z = np.random.uniform(-1, 1, size=(self.sample_num , self.z_dim))
     sample_inputs = data_X[0:self.sample_num]
     sample_labels = data_y[0:self.sample_num]
   
+    
     counter = 1
     start_time = time.time()
-
     if self.load(self.checkpoint_dir):
       print(" [*] Load SUCCESS")
     else:
       print(" [!] Load failed...")
 
+    #start training
     for epoch in xrange(config.epoch):
       batch_idxs = min(len(data_X), config.train_size) // config.batch_size
-
+      #go through all batches
       for idx in xrange(0, batch_idxs):
+        #get batches
         batch_images = data_X[idx*config.batch_size:(idx+1)*config.batch_size]
         batch_labels = data_y[idx*config.batch_size:(idx+1)*config.batch_size]
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
@@ -188,12 +202,15 @@ class DCGAN(object):
             self.y:batch_labels,
           })
         self.writer.add_summary(summary_str, counter)
-
         # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
         _, summary_str = self.sess.run([g_optim, self.g_sum],
-          feed_dict={ self.z: batch_z, self.y:batch_labels })
+          feed_dict={ 
+                     self.z: batch_z, 
+                     self.y:batch_labels 
+                     })
         self.writer.add_summary(summary_str, counter)
-          
+         
+        #get error values for display
         errD_fake = self.d_loss_fake.eval({
             self.z: batch_z, 
             self.y:batch_labels
@@ -210,8 +227,10 @@ class DCGAN(object):
         counter += 1
         print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
           % (epoch, idx, batch_idxs,
-            time.time() - start_time, errD_fake+errD_real, errG))
+            time.time() - start_time, 
+            errD_fake+errD_real, errG))
 
+        #every 100 batches, we get and save a sample (note that the inputs are always the same)
         if np.mod(counter, 100) == 1:
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
@@ -225,58 +244,79 @@ class DCGAN(object):
                 './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
 
+        #save training every 500 batches
         if np.mod(counter, 500) == 2:
           self.save(config.checkpoint_dir, counter)
 
+          
+          
   def discriminator(self, image, y=None, reuse=False):
     with tf.variable_scope("discriminator") as scope:
+      
+      #this is to use the same variables for the real and fake update
       if reuse:
         scope.reuse_variables()
 
+      #labels
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+      #the input is concatenated with the labels 
       x = conv_cond_concat(image, yb)
 
+      #first layer (conv2d + relu, no batch norm.)
       h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
+      #concatenate with the labels 
       h0 = conv_cond_concat(h0, yb)
 
+      #second layer (conv2d + batch norm. + relu)
       h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
       h1 = tf.reshape(h1, [self.batch_size, -1])      
       h1 = tf.concat_v2([h1, y], 1)
         
+      #third layer (linear + batch norm. + relu)
       h2 = lrelu(self.d_bn2(linear(h1, self.dfc_dim, 'd_h2_lin')))
       h2 = tf.concat_v2([h2, y], 1)
 
+      #forth layer (linear + sigmoid)
       h3 = linear(h2, 1, 'd_h3_lin')
         
       return tf.nn.sigmoid(h3), h3
 
+
   def generator(self, z, y=None):
     with tf.variable_scope("generator") as scope:
+      #sizes
       s_h, s_w = self.output_height, self.output_width
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
       s_w2, s_w4 = int(s_w), int(s_w)
 
-      # yb = tf.expand_dims(tf.expand_dims(y, 1),2)
+      #labels
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+      #z is concatenated with the labels 
       z = tf.concat_v2([z, y], 1)
 
+      #first layer (linear + batch norm. + relu)
       h0 = tf.nn.relu(
           self.g_bn0(linear(z, self.gfc_dim, 'g_h0_lin')))
       h0 = tf.concat_v2([h0, y], 1)
       
+      #first layer (linear + batch norm. + relu)
       h1 = tf.nn.relu(self.g_bn1(
           linear(h0, self.gf_dim*2*s_h4*s_w4, 'g_h1_lin')))
       h1 = tf.reshape(h1, [self.batch_size, s_h4, s_w4, self.gf_dim * 2])
-
       h1 = conv_cond_concat(h1, yb)
 
+      #third layer (deconv2d + batch norm. + relu)
       h2 = tf.nn.relu(self.g_bn2(deconv2d(h1,
           [self.batch_size, s_h2, s_w2, self.gf_dim * 2], name='g_h2')))
       h2 = conv_cond_concat(h2, yb)
 
+      #third layer (deconv2d + signmoid, no batch norm.)
       return tf.nn.sigmoid(
           deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
+  
+  #this function is the same as the generator, but it is just retrieve samples 
+  #(note the train=false of lines 335 and 340)
   def sampler(self, z, y=None):
     with tf.variable_scope("generator") as scope:
       scope.reuse_variables()
@@ -303,10 +343,9 @@ class DCGAN(object):
 
       return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.output_depth], name='g_h3'))
 
+      
   def load_mnist(self):
-    
-    #we load and slice the images to build 1D samples
-    
+    #we load and slice the images to build 1D samples    
     #create artificial data
     num_samples = 40000
     num_bins = 28

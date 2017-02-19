@@ -256,29 +256,37 @@ class DCGAN(object):
       #this is to use the same variables for the real and fake update
       if reuse:
         scope.reuse_variables()
-
+      print('image.get_shape()')  
+      print(image.get_shape())
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
       #the input is concatenated with the labels 
       x = conv_cond_concat(image, yb)
-
+      
       #first layer (conv2d + relu, no batch norm.)
       h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
+      print('h0.get_shape()')
+      print(h0.get_shape())
       #concatenate with the labels 
       h0 = conv_cond_concat(h0, yb)
-
+      
       #second layer (conv2d + batch norm. + relu)
       h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
+      print('h1.get_shape()')
+      print(h1.get_shape())
       h1 = tf.reshape(h1, [self.batch_size, -1])      
       h1 = tf.concat_v2([h1, y], 1)
-        
+      
       #third layer (linear + batch norm. + relu)
       h2 = lrelu(self.d_bn2(linear(h1, self.dfc_dim, 'd_h2_lin')))
+      print('h2.get_shape()')
+      print(h2.get_shape())
       h2 = tf.concat_v2([h2, y], 1)
-
+      
       #forth layer (linear + sigmoid)
       h3 = linear(h2, 1, 'd_h3_lin')
-        
+      print('h3.get_shape()')
+      print(h3.get_shape())
       return tf.nn.sigmoid(h3), h3
 
 

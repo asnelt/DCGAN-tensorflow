@@ -92,17 +92,19 @@ class DCGAN(object):
     self.sampler = self.sampler(self.z, self.y)
     
     #discriminator on the real samples 
-    self.D, self.D_logits = \
+    self.D, self.D_logits, self.D_first_layer = \
         self.discriminator(inputs, self.y, reuse=False)
     #discriminator on the samples produced by G
-    self.D_, self.D_logits_ = \
+    self.D_, self.D_logits_, self.D__first_layer = \
         self.discriminator(self.G, self.y, reuse=True)
         
     #save outputs from discriminator (real and fake) and generator for tensorboard
     self.d_sum = tf.summary.histogram("d", self.D)
     self.d__sum = tf.summary.histogram("d_", self.D_)
     self.G_sum = tf.summary.image("G", self.G)
-
+    self.d_first_layer_sim = tf.summary.image("d_first_layer", self.D_first_layer)
+    self.d__first_layer_sim = tf.summary.image("d__first_layer", self.D__first_layer)
+    
     #loss functions
     #loss D real samples
     self.d_loss_real = tf.reduce_mean(
@@ -157,10 +159,10 @@ class DCGAN(object):
       self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
     #put all D variables saved for tensorboard together
     self.d_sum = tf.summary.merge(
-        [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
+        [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum, self.d_first_layer_sim, self.d__first_layer_sim])
     
     #save variables in ./logs
-    self.writer = tf.summary.FileWriter("./logs2", self.sess.graph)
+    self.writer = tf.summary.FileWriter("./logs_with_first_layer_d_saved_as_an_image", self.sess.graph)
 
     #samples for visualization (will be used for self.sampler)
     sample_z = np.random.uniform(-1, 1, size=(self.sample_num , self.z_dim))
@@ -186,6 +188,18 @@ class DCGAN(object):
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         
+        #visualize batches
+        visualize_batches = False
+        if visualize_batches:
+            print(batch_labels.shape)
+            print(batch_z.shape)
+            f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=False)
+            sample = batch_images[:,:,0,0]
+            ax1.imshow(sample)
+            ax2.imshow(batch_z)
+            ax3.imshow(batch_labels)
+            plt.show()
+
         # Update D network
         _, summary_str = self.sess.run([d_optim, self.d_sum],
           feed_dict={ 
@@ -265,6 +279,7 @@ class DCGAN(object):
       
       #first layer (conv2d + relu, no batch norm.)
       h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
+      h0_sum = h0            
       #print('h0.get_shape()')
       #print(h0.get_shape())
       #concatenate with the labels 
@@ -287,7 +302,7 @@ class DCGAN(object):
       h3 = linear(h2, 1, 'd_h3_lin')
       #print('h3.get_shape()')
       #print(h3.get_shape())
-      return tf.nn.sigmoid(h3), h3
+      return tf.nn.sigmoid(h3), h3, h0_sum
 
 
   def generator(self, z, y=None):
@@ -355,11 +370,11 @@ class DCGAN(object):
   def load_mnist(self):
     #we load and slice the images to build 1D samples    
     #create artificial data
-    num_samples = 40000
+    num_samples = 60000
     num_bins = 28
     firing_rate = 10
     margin = 0
-    noise = 0.1
+    noise = 0.01
     std_resp = 2
     peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
     peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)

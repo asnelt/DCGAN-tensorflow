@@ -35,13 +35,7 @@ def conv2d(input_, output_dim,
   with tf.variable_scope(name):
     w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
               initializer=tf.truncated_normal_initializer(stddev=stddev))
-    #print('w.get_shape()')
-    #print(w.get_shape())
     conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='SAME')
-    #print('input_.get_shape()')
-    #print(input_.get_shape())
-    #print('conv.get_shape()')
-    #print(conv.get_shape())
     biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
     conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
 

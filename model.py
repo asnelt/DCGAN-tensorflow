@@ -7,6 +7,7 @@ from six.moves import xrange
 import matplotlib.pyplot as plt
 from ops import *
 from utils import *
+import scipy.misc
 
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_width=1, input_depth=1, is_crop=True,
@@ -88,7 +89,7 @@ class DCGAN(object):
 
     #generator
     self.G = self.generator(self.z, self.y)
-    #sampler this is used to get samples from G
+    #sampler, this is used to get samples from G
     self.sampler = self.sampler(self.z, self.y)
     
     #discriminator on the real samples 
@@ -101,7 +102,10 @@ class DCGAN(object):
     #save outputs from discriminator (real and fake) and generator for tensorboard
     self.d_sum = tf.summary.histogram("d", self.D)
     self.d__sum = tf.summary.histogram("d_", self.D_)
-    self.G_sum = tf.summary.image("G", self.G)
+    h0_shape = self.G.get_shape().as_list()
+    aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
+    G_sum = tf.reshape(self.G,aux)
+    self.G_sum = tf.summary.image("G", G_sum)
     self.d_first_layer_sim = tf.summary.image("d_first_layer", self.D_first_layer)
     self.d__first_layer_sim = tf.summary.image("d__first_layer", self.D__first_layer)
     
@@ -177,6 +181,7 @@ class DCGAN(object):
     else:
       print(" [!] Load failed...")
 
+    combined_summary = tf.Summary()
     #start training
     for epoch in xrange(config.epoch):
       batch_idxs = min(len(data_X), config.train_size) // config.batch_size
@@ -188,17 +193,30 @@ class DCGAN(object):
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         
-        #visualize batches
-        visualize_batches = False
-        if visualize_batches:
-            print(batch_labels.shape)
-            print(batch_z.shape)
-            f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=False)
-            sample = batch_images[:,:,0,0]
-            ax1.imshow(sample)
-            ax2.imshow(batch_z)
-            ax3.imshow(batch_labels)
-            plt.show()
+        #every 100 batches, we get and save a sample (note that the inputs are always the same)
+        if np.mod(counter, 500) == 1 or (epoch==0 and idx<=10):
+          samples, d_loss, g_loss = self.sess.run(
+            [self.sampler, self.d_loss, self.g_loss],
+            feed_dict={
+                self.z: sample_z,
+                self.inputs: sample_inputs,
+                self.y:sample_labels,
+            }
+          )
+          fig = plt.figure()
+          samples_plot = samples[:,:,0,0]
+          plt.plot(np.transpose(samples_plot))
+          fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+          fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx), bbox_inches='tight')
+          #print('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
+          #plt.show()
+          plt.close(fig)
+          #print(np.reshape(samples,[samples.shape[0],samples.shape[1]]).shape)
+          #scipy.misc.toimage(np.reshape(samples,[samples.shape[0],samples.shape[1]]), cmin=np.min(samples), cmax=np.max(samples)).save('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
+          #scipy.misc.imsave('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx), np.reshape(samples,[samples.shape[0],samples.shape[1]]))
+          #save_images(samples, [8, 8],
+          #      './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
+          print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
 
         # Update D network
         _, summary_str = self.sess.run([d_optim, self.d_sum],
@@ -207,7 +225,12 @@ class DCGAN(object):
             self.z: batch_z,
             self.y:batch_labels,
           })
-        self.writer.add_summary(summary_str, counter)
+        
+        combined_summary.MergeFromString(summary_str)
+        if (counter+1) % 1000 == 0:
+            self.writer.add_summary(combined_summary,counter)
+            combined_summary = tf.Summary()   
+        #self.writer.add_summary(summary_str, counter)
 
         # Update G network
         _, summary_str = self.sess.run([g_optim, self.g_sum],
@@ -215,7 +238,11 @@ class DCGAN(object):
             self.z: batch_z, 
             self.y:batch_labels,
           })
-        self.writer.add_summary(summary_str, counter)
+        combined_summary.MergeFromString(summary_str)
+        if (counter+1) % 1000 == 0:
+            self.writer.add_summary(combined_summary,counter)
+            combined_summary = tf.Summary()
+        #self.writer.add_summary(summary_str, counter)
         # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
         _, summary_str = self.sess.run([g_optim, self.g_sum],
           feed_dict={ 
@@ -244,19 +271,7 @@ class DCGAN(object):
             time.time() - start_time, 
             errD_fake+errD_real, errG))
 
-        #every 100 batches, we get and save a sample (note that the inputs are always the same)
-        if np.mod(counter, 100) == 1:
-          samples, d_loss, g_loss = self.sess.run(
-            [self.sampler, self.d_loss, self.g_loss],
-            feed_dict={
-                self.z: sample_z,
-                self.inputs: sample_inputs,
-                self.y:sample_labels,
-            }
-          )
-          save_images(samples, [8, 8],
-                './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-          print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
+        
 
         #save training every 500 batches
         if np.mod(counter, 500) == 2:
@@ -279,7 +294,9 @@ class DCGAN(object):
       
       #first layer (conv2d + relu, no batch norm.)
       h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
-      h0_sum = h0            
+      h0_shape = h0.get_shape().as_list()
+      aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
+      h0_sum = tf.reshape(h0,aux)
       #print('h0.get_shape()')
       #print(h0.get_shape())
       #concatenate with the labels 
@@ -370,7 +387,7 @@ class DCGAN(object):
   def load_mnist(self):
     #we load and slice the images to build 1D samples    
     #create artificial data
-    num_samples = 60000
+    num_samples = 40000
     num_bins = 28
     firing_rate = 10
     margin = 0
@@ -401,7 +418,11 @@ class DCGAN(object):
         if ind%100==0:
             ax2.plot(r[0])
     
-    plt.show()
+    f.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png', bbox_inches='tight')
+    plt.close(f)
+    show_real_samples = False
+    if show_real_samples:
+        plt.show()
     y_vec = y
     # Shuffle images
     seed = 547

@@ -12,7 +12,7 @@ import scipy.misc
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_width=1, input_depth=1, is_crop=True,
          batch_size=64, sample_num = 64, output_height=28, output_width=1, output_depth=1,
-         y_dim=2, z_dim=100, gf_dim=64, df_dim=64,
+         y_dim=20, z_dim=100, gf_dim=64, df_dim=64,
          gfc_dim=1024, dfc_dim=1024, dataset_name='default',
          input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
     """
@@ -93,10 +93,10 @@ class DCGAN(object):
     self.sampler = self.sampler(self.z, self.y)
     
     #discriminator on the real samples 
-    self.D, self.D_logits, self.D_first_layer = \
+    self.D, self.D_logits = \
         self.discriminator(inputs, self.y, reuse=False)
     #discriminator on the samples produced by G
-    self.D_, self.D_logits_, self.D__first_layer = \
+    self.D_, self.D_logits_ = \
         self.discriminator(self.G, self.y, reuse=True)
         
     #save outputs from discriminator (real and fake) and generator for tensorboard
@@ -106,8 +106,8 @@ class DCGAN(object):
     aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
     G_sum = tf.reshape(self.G,aux)
     self.G_sum = tf.summary.image("G", G_sum)
-    self.d_first_layer_sim = tf.summary.image("d_first_layer", self.D_first_layer)
-    self.d__first_layer_sim = tf.summary.image("d__first_layer", self.D__first_layer)
+    #self.d_first_layer_sim = tf.summary.image("d_first_layer", self.D_first_layer)
+    #self.d__first_layer_sim = tf.summary.image("d__first_layer", self.D__first_layer)
     
     #loss functions
     #loss D real samples
@@ -163,7 +163,7 @@ class DCGAN(object):
       self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
     #put all D variables saved for tensorboard together
     self.d_sum = tf.summary.merge(
-        [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum, self.d_first_layer_sim, self.d__first_layer_sim])
+        [self.z_sum, self.d_sum, self.d_loss_real_sum, self.d_loss_sum])#, self.d_first_layer_sim, self.d__first_layer_sim])
     
     #save variables in ./logs
     self.writer = tf.summary.FileWriter("./logs_with_first_layer_d_saved_as_an_image", self.sess.graph)
@@ -295,9 +295,9 @@ class DCGAN(object):
       
       #first layer (conv2d + relu, no batch norm.)
       h0 = lrelu(conv2d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
-      h0_shape = h0.get_shape().as_list()
-      aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
-      h0_sum = tf.reshape(h0,aux)
+      #h0_shape = h0.get_shape().as_list()
+      #aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
+      #h0_sum = tf.reshape(h0,aux)
       print('h0.get_shape()')
       print(h0.get_shape())
       #concatenate with the labels 
@@ -322,7 +322,7 @@ class DCGAN(object):
       h3 = linear(h2, 1, 'd_h3_lin')
       print('h3.get_shape()')
       print(h3.get_shape())
-      return tf.nn.sigmoid(h3), h3, h0_sum
+      return tf.nn.sigmoid(h3), h3#, h0_sum
 
 
   def generator(self, z, y=None):
@@ -405,43 +405,48 @@ class DCGAN(object):
   def load_mnist(self):
     #we load and slice the images to build 1D samples    
     #create artificial data
-    num_samples = 40000
+    num_samples = 80000
     num_bins = 28
     firing_rate = 10
-    margin = 0
+    margin = 10
     noise = 0.01
     std_resp = 2
-    peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
-    peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)
     t = np.arange(num_bins)
-    X =np.zeros((2*num_samples,num_bins,1,1))
-    y =np.zeros((2*num_samples,self.y_dim))
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False)
-    
+    X =np.zeros((num_samples,num_bins,1,1))
+    y =np.zeros((num_samples,self.y_dim))
+    f, (ax1,ax2) = plt.subplots(1, 2, sharey=False)
+#    peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
+#    peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)
 
+#    
+#    
+#
+#    for ind in range(int(num_samples)):
+#        r1 = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+#        r2 = firing_rate*np.exp(-(t-peaks2[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+#        r = r1 + r2
+#        X[ind,:,0,0] = r
+#        y[ind,:] = [1,0]
+#        if ind%100==0:
+#            ax1.plot(r[0])
+
+    peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin,num_samples)
     for ind in range(int(num_samples)):
-        r1 = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-        r2 = firing_rate*np.exp(-(t-peaks2[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-        r = r1 + r2
+        r = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
         X[ind,:,0,0] = r
-        y[ind,:] = [1,0]
+        y[ind,peaks1[ind]-(int(num_bins/2)-margin)] = 1
         if ind%100==0:
             ax1.plot(r[0])
-
-    peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin+1,num_samples)
-    for ind in range(int(num_samples+1),int(2*num_samples)):
-        r = firing_rate*np.exp(-(t-peaks1[ind-num_samples])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-        X[ind,:,0,0] = r
-        y[ind,:] = [0,1]
-        if ind%100==0:
-            ax2.plot(r[0])
+    
+    ax2.imshow(y[1:100,:])
+    show_real_samples = True#False
+    if show_real_samples:
+        plt.show()
     
     f.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png', bbox_inches='tight')
     plt.close(f)
-    show_real_samples = False
-    if show_real_samples:
-        plt.show()
     y_vec = y
+    print(y_vec.shape)
     # Shuffle images
     seed = 547
     np.random.seed(seed)

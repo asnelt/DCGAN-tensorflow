@@ -194,7 +194,7 @@ class DCGAN(object):
               .astype(np.float32)
         
         #every 100 batches, we get and save a sample (note that the inputs are always the same)
-        if np.mod(counter, 500) == 1 or (epoch==0 and idx<=10):
+        if np.mod(counter, 500) == 1 or (epoch==0 and idx<=100):
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
             feed_dict={
@@ -409,7 +409,7 @@ class DCGAN(object):
     num_bins = 28
     firing_rate = 10
     margin = 10
-    noise = 0.01
+    noise = 0.5
     std_resp = 2
     t = np.arange(num_bins)
     X =np.zeros((num_samples,num_bins,1,1))
@@ -445,6 +445,7 @@ class DCGAN(object):
     
     f.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png', bbox_inches='tight')
     plt.close(f)
+    X = X-np.min(X)
     y_vec = y
     print(y_vec.shape)
     # Shuffle images

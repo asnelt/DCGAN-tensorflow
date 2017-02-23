@@ -49,6 +49,8 @@ class DCGAN(object):
     self.output_height = output_height
     self.output_depth = output_depth
 
+    print(self.output_height)
+    print(self.input_height)
     self.y_dim = y_dim
     self.z_dim = z_dim
 
@@ -108,9 +110,10 @@ class DCGAN(object):
     #save outputs from discriminator (real and fake) and generator for tensorboard
     self.d_sum = tf.summary.histogram("d", self.D)
     self.d__sum = tf.summary.histogram("d_", self.D_)
-    h0_shape = self.G.get_shape().as_list()
-    aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
+    G_shape = self.G.get_shape().as_list()
+    aux = [G_shape[2], G_shape[0], G_shape[1]]
     G_sum = tf.reshape(self.G,aux)
+    G_sum = tf.expand_dims(G_sum,axis=3)
     self.G_sum = tf.summary.image("G", G_sum)
     
     #loss functions
@@ -329,7 +332,8 @@ class DCGAN(object):
     print('------------------------------------------')
     with tf.variable_scope("generator") as scope:
       #sizes
-      s_h = self.output_height,
+      s_h = self.output_height
+      print(s_h)
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
       
       
@@ -361,7 +365,7 @@ class DCGAN(object):
 
       #third layer (deconv1d + batch norm. + relu)
       h2 = tf.nn.relu(self.g_bn2(deconv1d(h1,
-          [self.batch_size, s_h2, self.gf_dim * 2], name='g_h2')))
+          [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2')))
       print('h2.get_shape()')
       print(h2.get_shape())
       h2 = conv_cond_concat(h2, yb)
@@ -370,7 +374,7 @@ class DCGAN(object):
       print('third layer')
       print([self.batch_size, s_h, self.output_depth])
       return tf.nn.sigmoid(
-          deconv1d(h2, [self.batch_size, s_h, self.output_depth], name='g_h3'))
+          deconv1d(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
   
   #this function is the same as the generator, but it is just retrieve samples 
@@ -380,7 +384,7 @@ class DCGAN(object):
       scope.reuse_variables()
 
       #sizes
-      s_h = self.output_height,
+      s_h = self.output_height
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
 
       #labels
@@ -397,10 +401,10 @@ class DCGAN(object):
       h1 = conv_cond_concat(h1, yb)
 
       h2 = tf.nn.relu(self.g_bn2(
-          deconv1d(h1, [self.batch_size, s_h2, self.gf_dim * 2], name='g_h2'), train=False))
+          deconv1d(h1, [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2'), train=False))
       h2 = conv_cond_concat(h2, yb)
 
-      return tf.nn.sigmoid(deconv1d(h2, [self.batch_size, s_h, self.output_depth], name='g_h3'))
+      return tf.nn.sigmoid(deconv1d(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
       
   def load_mnist(self):
@@ -411,25 +415,11 @@ class DCGAN(object):
     firing_rate = 10
     margin = 10
     noise = 0.5
-    std_resp = 2
+    std_resp = 0.1
     t = np.arange(num_bins)
     X =np.zeros((num_samples,num_bins,1))
     y =np.zeros((num_samples,self.y_dim))
     f, (ax1,ax2) = plt.subplots(1, 2, sharey=False)
-#    peaks1 = np.random.randint(int(num_bins/4)-margin,int(num_bins/4)+margin+1,num_samples)
-#    peaks2 = np.random.randint(num_bins-int(num_bins/4)-margin,num_bins-int(num_bins/4)+margin+1,num_samples)
-
-#    
-#    
-#
-#    for ind in range(int(num_samples)):
-#        r1 = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-#        r2 = firing_rate*np.exp(-(t-peaks2[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-#        r = r1 + r2
-#        X[ind,:,0,0] = r
-#        y[ind,:] = [1,0]
-#        if ind%100==0:
-#            ax1.plot(r[0])
 
     peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin,num_samples)
     for ind in range(int(num_samples)):
@@ -462,9 +452,9 @@ class DCGAN(object):
 
   @property
   def model_dir(self):
-    return "{}_{}_{}_{}".format(
+    return "{}_{}_{}".format(
         self.dataset_name, self.batch_size,
-        self.output_height, self.output_width)
+        self.output_height)
       
   def save(self, checkpoint_dir, step):
     model_name = "DCGAN.model"

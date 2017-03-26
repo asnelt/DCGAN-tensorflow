@@ -330,7 +330,7 @@ class DCGAN(object):
 
   def generator(self, z, y=None):
     print('GENERATOR------------------------------------------')
-    with tf.variable_scope("generator") as scope:
+    with tf.variable_scope("generator"):
       #sizes
       s_h = self.output_height
       s_h2, s_h4 = int(s_h/2), int(s_h/4)

@@ -7,11 +7,10 @@ Created on Thu Feb 23 11:27:20 2017
 """
 
 import os
-import scipy.misc
 import numpy as np
 
 from model import DCGAN
-from utils import pp, visualize, to_json
+from utils import pp, visualize
 
 import tensorflow as tf
 

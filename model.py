@@ -13,9 +13,7 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange
 import matplotlib.pyplot as plt
-from ops import *
-from utils import *
-import scipy.misc
+import ops 
 
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_depth=1, is_crop=True,
@@ -61,12 +59,12 @@ class DCGAN(object):
     self.dfc_dim = dfc_dim
 
     # batch normalization : deals with poor initialization helps gradient flow
-    self.d_bn1 = batch_norm(name='d_bn1')
-    self.d_bn2 = batch_norm(name='d_bn2')
+    self.d_bn1 = ops.batch_norm(name='d_bn1')
+    self.d_bn2 = ops.batch_norm(name='d_bn2')
 
-    self.g_bn0 = batch_norm(name='g_bn0')
-    self.g_bn1 = batch_norm(name='g_bn1')
-    self.g_bn2 = batch_norm(name='g_bn2')
+    self.g_bn0 = ops.batch_norm(name='g_bn0')
+    self.g_bn1 = ops.batch_norm(name='g_bn1')
+    self.g_bn2 = ops.batch_norm(name='g_bn2')
 
     self.dataset_name = dataset_name
     self.input_fname_pattern = input_fname_pattern
@@ -283,7 +281,7 @@ class DCGAN(object):
           
           
   def discriminator(self, image, y=None, reuse=False):
-    print('------------------------------------------')
+    print('DISCRIMINATOR------------------------------------------')
     with tf.variable_scope("discriminator") as scope:
       
       #this is to use the same variables for the real and fake update
@@ -294,20 +292,20 @@ class DCGAN(object):
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, self.y_dim])
       #the input is concatenated with the labels 
-      x = conv_cond_concat(image, yb)
+      x = ops.conv_cond_concat(image, yb)
       
       #first layer (conv2d + relu, no batch norm.)
-      h0 = lrelu(conv1d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
+      h0 = ops.lrelu(ops.conv1d(x, self.output_depth + self.y_dim, name='d_h0_conv'))
       #h0_shape = h0.get_shape().as_list()
       #aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
       #h0_sum = tf.reshape(h0,aux)
       print('h0.get_shape()')
       print(h0.get_shape())
       #concatenate with the labels 
-      h0 = conv_cond_concat(h0, yb)
+      h0 = ops.conv_cond_concat(h0, yb)
       
       #second layer (conv2d + batch norm. + relu)
-      h1 = lrelu(self.d_bn1(conv1d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
+      h1 = ops.lrelu(self.d_bn1(ops.conv1d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
       print('h1.get_shape()')
       print(h1.get_shape())
       h1 = tf.reshape(h1, [self.batch_size, -1])   
@@ -316,27 +314,24 @@ class DCGAN(object):
       h1 = tf.concat_v2([h1, y], 1)
       
       #third layer (linear + batch norm. + relu)
-      h2 = lrelu(self.d_bn2(linear(h1, self.dfc_dim, 'd_h2_lin')))
+      h2 = ops.lrelu(self.d_bn2(ops.linear(h1, self.dfc_dim, 'd_h2_lin')))
       print('h2.get_shape()')
       print(h2.get_shape())
       h2 = tf.concat_v2([h2, y], 1)
       
       #forth layer (linear + sigmoid)
-      h3 = linear(h2, 1, 'd_h3_lin')
+      h3 = ops.linear(h2, 1, 'd_h3_lin')
       print('h3.get_shape()')
       print(h3.get_shape())
       return tf.nn.sigmoid(h3), h3#, h0_sum
 
 
   def generator(self, z, y=None):
-    print('------------------------------------------')
+    print('GENERATOR------------------------------------------')
     with tf.variable_scope("generator") as scope:
       #sizes
       s_h = self.output_height
-      print(s_h)
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
-      
-      
       print('z')  
       print(z.get_shape())
       print('y')  
@@ -348,33 +343,33 @@ class DCGAN(object):
 
       #first layer (linear + batch norm. + relu)
       h0 = tf.nn.relu(
-          self.g_bn0(linear(z, self.gfc_dim, 'g_h0_lin')))
+          self.g_bn0(ops.linear(z, self.gfc_dim, 'g_h0_lin')))
       print('h0.get_shape()')
       print(h0.get_shape())
       h0 = tf.concat_v2([h0, y], 1)
       
       #first layer (linear + batch norm. + relu)
       h1 = tf.nn.relu(self.g_bn1(
-          linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin')))
+          ops.linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin')))
       print('h1.get_shape()')
       print(h1.get_shape())
       h1 = tf.reshape(h1, [self.batch_size, s_h4, self.gf_dim * 2])
       print('h1.get_shape() reshaped')
       print(h1.get_shape())
-      h1 = conv_cond_concat(h1, yb)
+      h1 = ops.conv_cond_concat(h1, yb)
 
-      #third layer (deconv1d + batch norm. + relu)
-      h2 = tf.nn.relu(self.g_bn2(deconv1d(h1,
+      #third layer (deconv 1d + batch norm. + relu)
+      h2 = tf.nn.relu(self.g_bn2(ops.nn_resize(h1,
           [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2')))
       print('h2.get_shape()')
       print(h2.get_shape())
-      h2 = conv_cond_concat(h2, yb)
+      h2 = ops.conv_cond_concat(h2, yb)
 
-      #third layer (deconv1d + signmoid, no batch norm.)
+      #third layer (deconv 1d + signmoid, no batch norm.)
       print('third layer')
       print([self.batch_size, s_h, self.output_depth])
       return tf.nn.sigmoid(
-          deconv1d(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
+          ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
   
   #this function is the same as the generator, but it is just retrieve samples 
@@ -392,19 +387,19 @@ class DCGAN(object):
       #z is concatenated with the labels 
       z = tf.concat_v2([z, y], 1)
 
-      h0 = tf.nn.relu(self.g_bn0(linear(z, self.gfc_dim, 'g_h0_lin')))
+      h0 = tf.nn.relu(self.g_bn0(ops.linear(z, self.gfc_dim, 'g_h0_lin')))
       h0 = tf.concat_v2([h0, y], 1)
 
       h1 = tf.nn.relu(self.g_bn1(
-          linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin'), train=False))
+          ops.linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin'), train=False))
       h1 = tf.reshape(h1, [self.batch_size, s_h4, self.gf_dim * 2])
-      h1 = conv_cond_concat(h1, yb)
+      h1 = ops.conv_cond_concat(h1, yb)
 
       h2 = tf.nn.relu(self.g_bn2(
-          deconv1d(h1, [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2'), train=False))
-      h2 = conv_cond_concat(h2, yb)
+          ops.nn_resize(h1, [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2'), train=False))
+      h2 = ops.conv_cond_concat(h2, yb)
 
-      return tf.nn.sigmoid(deconv1d(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
+      return tf.nn.sigmoid(ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
       
   def load_mnist(self):

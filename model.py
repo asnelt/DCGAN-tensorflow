@@ -415,24 +415,44 @@ class DCGAN(object):
     std_resp = 0.1
     t = np.arange(num_bins)
     X =np.zeros((num_samples,num_bins,1))
-    y =np.zeros((num_samples,self.y_dim))
-    f, (ax1,ax2) = plt.subplots(1, 2, sharey=False)
+    
+    
+    
 
     peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin,num_samples)
+    num_stim = len(np.unique(peaks1))
+    first_stim = min(peaks1)
+    y =np.zeros((num_samples,num_stim))
+    size_figure = int(np.ceil(np.sqrt(num_stim)))
+    fig,sbplt = plt.subplots(size_figure,size_figure)
+    counter = np.zeros((1,num_stim))
     for ind in range(int(num_samples)):
+        stim = peaks1[ind]-first_stim
         r = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
         X[ind,:,0] = r
-        y[ind,peaks1[ind]-(int(num_bins/2)-margin)] = 1
-        if ind%100==0:
-            ax1.plot(r[0])
+        y[ind,stim] = 1
+        if counter[0][stim]==0:
+            sbplt[int(np.floor(stim/size_figure))][stim%size_figure].plot(r[0])
+            sbplt[int(np.floor(stim/size_figure))][stim%size_figure].axis('off')
+            counter[0][stim] = 1
+            print(counter)
+            
     
-    ax2.imshow(y[1:100,:])
     show_real_samples = True#False
     if show_real_samples:
         plt.show()
     
-    f.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png', bbox_inches='tight')
+    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png',dpi=199, bbox_inches='tight')
+    plt.close(fig)
+    
+    f = plt.figure()
+    plt.imshow(y[1:500,:])
+    if show_real_samples:
+        plt.show()
+    
+    f.savefig('/home/manuel/DCGAN-tensorflow/samples/stim_tags.png', bbox_inches='tight')
     plt.close(f)
+    
     X = X-np.min(X)
     y_vec = y
     # Shuffle images

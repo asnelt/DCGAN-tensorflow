@@ -208,11 +208,13 @@ class DCGAN(object):
                 self.y:sample_labels,
             }
           )
-          fig = plt.figure()
           samples_plot = samples[:,:,0]
-          plt.plot(np.transpose(samples_plot))
-          fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-          fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx), bbox_inches='tight')
+          fig,sbplt = plt.subplots(8,8)
+          for ind_pl in range(np.shape(samples_plot)[0]):
+              sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
+              sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
+              #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+          fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
           #print('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
           #plt.show()
           plt.close(fig)

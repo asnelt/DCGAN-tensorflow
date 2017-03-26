@@ -409,33 +409,40 @@ class DCGAN(object):
     #create artificial data
     num_samples = 80000
     num_bins = 28
-    firing_rate = 10
-    margin = 10
-    noise = 0.5
-    std_resp = 0.1
+    firing_rate = 0.1
+    margin = 6
+    noise = 0.01*firing_rate
+    std_resp = 4
     t = np.arange(num_bins)
-    X =np.zeros((num_samples,num_bins,1))
     
     
     
-
-    peaks1 = np.random.randint(int(num_bins/2)-margin,int(num_bins/2)+margin,num_samples)
-    num_stim = len(np.unique(peaks1))
-    first_stim = min(peaks1)
-    y =np.zeros((num_samples,num_stim))
-    size_figure = int(np.ceil(np.sqrt(num_stim)))
-    fig,sbplt = plt.subplots(size_figure,size_figure)
-    counter = np.zeros((1,num_stim))
-    for ind in range(int(num_samples)):
-        stim = peaks1[ind]-first_stim
-        r = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+    peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,self.y_dim)
+    peaks1 = np.matlib.repmat(peaks1,int(np.round(num_samples/self.y_dim)),1)
+    peaks1 = np.reshape(peaks1,(peaks1.size,1))
+    stims = np.unique(peaks1)
+    print(stims)
+    X =np.zeros((peaks1.size,num_bins,1))
+    y =np.zeros((peaks1.size,self.y_dim))
+    fig,sbplt = plt.subplots(1,self.y_dim)
+    counter = np.zeros((1,self.y_dim))
+    for ind in range(peaks1.size):
+        stim = np.nonzero(stims==peaks1[ind])
+        stim = int(stim[0])
+        fr = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+        fr[fr<0] = 0
+        r = np.random.poisson(fr)
+        r[r>0] = 1
         X[ind,:,0] = r
         y[ind,stim] = 1
-        if counter[0][stim]==0:
-            sbplt[int(np.floor(stim/size_figure))][stim%size_figure].plot(r[0])
-            sbplt[int(np.floor(stim/size_figure))][stim%size_figure].axis('off')
-            counter[0][stim] = 1
-            print(counter)
+        counter[0][stim] = counter[0][stim] + 1
+        if counter[0][stim]==1:
+            sbplt[stim].plot(fr[0],linewidth=4.0)
+        if counter[0][stim]<=10:
+            sbplt[stim].plot(r[0])
+            sbplt[stim].axis('off')
+            
+            
             
     
     show_real_samples = True#False
@@ -445,8 +452,11 @@ class DCGAN(object):
     fig.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png',dpi=199, bbox_inches='tight')
     plt.close(fig)
     
-    f = plt.figure()
-    plt.imshow(y[1:500,:])
+    f,sbplt = plt.subplots(1,2)
+    print(np.shape(sbplt))
+    sbplt[0].plot(counter[0])
+    sbplt[1].imshow(y[1:100,:])
+    
     if show_real_samples:
         plt.show()
     

@@ -47,8 +47,6 @@ class DCGAN(object):
     self.output_height = output_height
     self.output_depth = output_depth
 
-    print(self.output_height)
-    print(self.input_height)
     self.y_dim = y_dim
     self.z_dim = z_dim
 
@@ -289,8 +287,6 @@ class DCGAN(object):
       #this is to use the same variables for the real and fake update
       if reuse:
         scope.reuse_variables()
-      print('image.get_shape()')  
-      print(image.get_shape())
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, self.y_dim])
       #the input is concatenated with the labels 
@@ -301,30 +297,20 @@ class DCGAN(object):
       #h0_shape = h0.get_shape().as_list()
       #aux = [h0_shape[2], h0_shape[0], h0_shape[1],h0_shape[3]]
       #h0_sum = tf.reshape(h0,aux)
-      print('h0.get_shape()')
-      print(h0.get_shape())
       #concatenate with the labels 
       h0 = ops.conv_cond_concat(h0, yb)
       
       #second layer (conv2d + batch norm. + relu)
       h1 = ops.lrelu(self.d_bn1(ops.conv1d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
-      print('h1.get_shape()')
-      print(h1.get_shape())
       h1 = tf.reshape(h1, [self.batch_size, -1])   
-      print('h1.get_shape() reshaped')
-      print(h1.get_shape())
       h1 = tf.concat_v2([h1, y], 1)
       
       #third layer (linear + batch norm. + relu)
       h2 = ops.lrelu(self.d_bn2(ops.linear(h1, self.dfc_dim, 'd_h2_lin')))
-      print('h2.get_shape()')
-      print(h2.get_shape())
       h2 = tf.concat_v2([h2, y], 1)
       
       #forth layer (linear + sigmoid)
       h3 = ops.linear(h2, 1, 'd_h3_lin')
-      print('h3.get_shape()')
-      print(h3.get_shape())
       return tf.nn.sigmoid(h3), h3#, h0_sum
 
 
@@ -334,10 +320,6 @@ class DCGAN(object):
       #sizes
       s_h = self.output_height
       s_h2, s_h4 = int(s_h/2), int(s_h/4)
-      print('z')  
-      print(z.get_shape())
-      print('y')  
-      print(y.get_shape())
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, self.y_dim])
       #z is concatenated with the labels 
@@ -346,30 +328,20 @@ class DCGAN(object):
       #first layer (linear + batch norm. + relu)
       h0 = tf.nn.relu(
           self.g_bn0(ops.linear(z, self.gfc_dim, 'g_h0_lin')))
-      print('h0.get_shape()')
-      print(h0.get_shape())
       h0 = tf.concat_v2([h0, y], 1)
       
       #first layer (linear + batch norm. + relu)
       h1 = tf.nn.relu(self.g_bn1(
           ops.linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin')))
-      print('h1.get_shape()')
-      print(h1.get_shape())
       h1 = tf.reshape(h1, [self.batch_size, s_h4, self.gf_dim * 2])
-      print('h1.get_shape() reshaped')
-      print(h1.get_shape())
       h1 = ops.conv_cond_concat(h1, yb)
 
       #third layer (deconv 1d + batch norm. + relu)
       h2 = tf.nn.relu(self.g_bn2(ops.nn_resize(h1,
           [self.batch_size, s_h2, 1, self.gf_dim * 2], name='g_h2')))
-      print('h2.get_shape()')
-      print(h2.get_shape())
       h2 = ops.conv_cond_concat(h2, yb)
 
       #third layer (deconv 1d + signmoid, no batch norm.)
-      print('third layer')
-      print([self.batch_size, s_h, self.output_depth])
       return tf.nn.sigmoid(
           ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
@@ -415,13 +387,10 @@ class DCGAN(object):
     std_resp = 4
     t = np.arange(num_bins)
     
-    
-    
     peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,self.y_dim)
     peaks1 = np.matlib.repmat(peaks1,int(np.round(num_samples/self.y_dim)),1)
     peaks1 = np.reshape(peaks1,(peaks1.size,1))
     stims = np.unique(peaks1)
-    print(stims)
     X =np.zeros((peaks1.size,num_bins,1))
     y =np.zeros((peaks1.size,self.y_dim))
     fig,sbplt = plt.subplots(1,self.y_dim)
@@ -453,7 +422,6 @@ class DCGAN(object):
     plt.close(fig)
     
     f,sbplt = plt.subplots(1,2)
-    print(np.shape(sbplt))
     sbplt[0].plot(counter[0])
     sbplt[1].imshow(y[1:100,:])
     

@@ -147,7 +147,7 @@ class DCGAN(object):
   def train(self, config):
     """Train DCGAN"""
     #get data
-    data_X, data_y = self.load_mnist()
+    data_X, data_y = self.poisson_spike_trains()
     
     #define optimizer
     d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
@@ -376,15 +376,14 @@ class DCGAN(object):
       return tf.nn.sigmoid(ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
       
-  def load_mnist(self):
-    #we load and slice the images to build 1D samples    
+  def poisson_spike_trains(self):
     #create artificial data
     num_samples = 80000
     num_bins = 28
     firing_rate = 0.1
-    margin = 6
     noise = 0.01*firing_rate
-    std_resp = 4
+    margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
+    std_resp = 4 #std of the gaussian defining the firing rates
     t = np.arange(num_bins)
     
     peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,self.y_dim)
@@ -412,8 +411,6 @@ class DCGAN(object):
             sbplt[stim].axis('off')
             
             
-            
-    
     show_real_samples = True#False
     if show_real_samples:
         plt.show()
@@ -439,9 +436,7 @@ class DCGAN(object):
     np.random.shuffle(X)
     np.random.seed(seed)
     np.random.shuffle(y)
- 
-    
-    
+   
   
     return X/X.max(),y_vec
 

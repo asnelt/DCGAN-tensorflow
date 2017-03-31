@@ -29,7 +29,7 @@ def conv_cond_concat(x, y):
   """Concatenate conditioning vector on feature map axis."""
   x_shapes = x.get_shape()
   y_shapes = y.get_shape()
-  return tf.concat_v2([x, y*tf.ones([x_shapes[0], x_shapes[1], y_shapes[2]])], 2)
+  return tf.concat([x, y*tf.ones([x_shapes[0], x_shapes[1], y_shapes[2]])], 2)
 
 def conv1d(input_, output_dim, 
        k_h=5, d_h=2, stddev=0.02,

@@ -13,7 +13,16 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange
 import matplotlib.pyplot as plt
-import ops 
+import ops
+
+# compatibility for TF v<1.0
+if int(tensorflow.__version__.split('.')[0]) < 1:
+  tf.concat = tf.concat_v2
+
+  def temp_wrapper(logits, labels, name=None):
+    return tf.nn_sigmoid_cross_entropy_with_logits(logits=logits, targets=labels, name=name)
+
+  tf.nn.sigmoid_cross_entropy_with_logits = temp_wrapper
 
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_depth=1, is_crop=True,
@@ -119,15 +128,15 @@ class DCGAN(object):
     #loss D real samples
     self.d_loss_real = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
-        logits=self.D_logits, targets=tf.ones_like(self.D)))
+        logits=self.D_logits, labels=tf.ones_like(self.D)))
     #loss D fake samples
     self.d_loss_fake = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
-        logits=self.D_logits_, targets=tf.zeros_like(self.D_)))
+        logits=self.D_logits_, labels=tf.zeros_like(self.D_)))
     #loss G
     self.g_loss = tf.reduce_mean(
       tf.nn.sigmoid_cross_entropy_with_logits(
-        logits=self.D_logits_, targets=tf.ones_like(self.D_)))
+        logits=self.D_logits_, labels=tf.ones_like(self.D_)))
 
     #save D losses for tensorboard
     self.d_loss_real_sum = tf.summary.scalar("d_loss_real", self.d_loss_real)
@@ -306,11 +315,11 @@ class DCGAN(object):
       #second layer (conv2d + batch norm. + relu)
       h1 = ops.lrelu(self.d_bn1(ops.conv1d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
       h1 = tf.reshape(h1, [self.batch_size, -1])   
-      h1 = tf.concat_v2([h1, y], 1)
+      h1 = tf.concat([h1, y], 1)
       
       #third layer (linear + batch norm. + relu)
       h2 = ops.lrelu(self.d_bn2(ops.linear(h1, self.dfc_dim, 'd_h2_lin')))
-      h2 = tf.concat_v2([h2, y], 1)
+      h2 = tf.concat([h2, y], 1)
       
       #forth layer (linear + sigmoid)
       h3 = ops.linear(h2, 1, 'd_h3_lin')
@@ -326,12 +335,12 @@ class DCGAN(object):
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, self.y_dim])
       #z is concatenated with the labels 
-      z = tf.concat_v2([z, y], 1)
+      z = tf.concat([z, y], 1)
 
       #first layer (linear + batch norm. + relu)
       h0 = tf.nn.relu(
           self.g_bn0(ops.linear(z, self.gfc_dim, 'g_h0_lin')))
-      h0 = tf.concat_v2([h0, y], 1)
+      h0 = tf.concat([h0, y], 1)
       
       #first layer (linear + batch norm. + relu)
       h1 = tf.nn.relu(self.g_bn1(
@@ -362,10 +371,10 @@ class DCGAN(object):
       #labels
       yb = tf.reshape(y, [self.batch_size, 1, self.y_dim])
       #z is concatenated with the labels 
-      z = tf.concat_v2([z, y], 1)
+      z = tf.concat([z, y], 1)
 
       h0 = tf.nn.relu(self.g_bn0(ops.linear(z, self.gfc_dim, 'g_h0_lin')))
-      h0 = tf.concat_v2([h0, y], 1)
+      h0 = tf.concat([h0, y], 1)
 
       h1 = tf.nn.relu(self.g_bn1(
           ops.linear(h0, self.gf_dim*2*s_h4, 'g_h1_lin'), train=False))

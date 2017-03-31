@@ -12,6 +12,8 @@ import time
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import ops
 from functools import wraps

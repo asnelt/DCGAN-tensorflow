@@ -3,14 +3,11 @@ Some codes from https://github.com/Newmu/dcgan_code
 """
 from __future__ import division
 import math
-import json
-import random
 import pprint
 import scipy.misc
 import numpy as np
 import matplotlib.pyplot as plt
-from time import gmtime, strftime
-
+import ops
 pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
@@ -149,80 +146,44 @@ def make_gif(images, fname, duration=2, true_image=False):
   clip = mpy.VideoClip(make_frame, duration=duration)
   clip.write_gif(fname, fps = len(images) / duration)
 
-def visualize(sess, dcgan, config, option):
-  if option == 0:
-    z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size, dcgan.z_dim))
-    samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    save_images(samples, [8, 8], './samples/test_%s.png' % strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-  elif option == 1:
-    values = np.arange(0, 1, 1./config.batch_size)
+def visualize(sess, dcgan, config):
+    num_samples = int(2**15)
+    num_trials = int(num_samples/dcgan.batch_size)
+    X = np.ndarray((num_samples,int(dcgan.output_height),1))    
+    for ind_tr in range(num_trials):
+        z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+        y = np.random.choice(dcgan.y_dim, dcgan.batch_size)
+        y_one_hot = np.zeros((dcgan.batch_size, dcgan.y_dim))
+        y_one_hot[np.arange(dcgan.batch_size), y] = 1
+        
+        X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
+        
     
-    for idx in range(100):
-      print(" [*] %d" % idx)
-      #z_sample = np.zeros([config.batch_size, dcgan.z_dim])
-      z_sample = np.random.uniform(-1, 1, size=(config.batch_size, dcgan.z_dim))
-      for kdx, z in enumerate(z_sample):
-        z[idx] = values[kdx]
+    fig = plt.figure()
+    plt.plot(np.unique(X))
+    
+    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/fake_samples_values.png', bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
+    X[X>=0.5] = 1
+    X[X<0.5] = 0
+    print(np.min(X))
+    print(np.max(X))
+    print(len(np.unique(X)))
+    ops.spk_autocorrelegram(X[:,:,0],'fake')   
+    samples_plot = X[np.arange(0,dcgan.batch_size),:,:]
+    fig,sbplt = plt.subplots(8,8)
+    for ind_pl in range(np.shape(samples_plot)[0]):
+        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
+        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
+        #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+    #fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
 
-      if config.dataset == "mnist":
-        y = np.random.choice(2, config.batch_size)
-        y_one_hot = np.zeros((config.batch_size, 2))
-        y_one_hot[np.arange(config.batch_size), y] = 1
+      
+      
 
-        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
-      else:
-        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-
-      print(samples.shape)
-      aux = samples[:,:,0,0]
-      plt.plot(np.transpose(aux))
-      plt.show()
-      #save_images(samples, [8, 8], './samples/test_arange_%s.png' % (idx))
-  elif option == 2:
-    values = np.arange(0, 1, 1./config.batch_size)
-    for idx in [random.randint(0, 99) for _ in range(100)]:
-      print(" [*] %d" % idx)
-      z = np.random.uniform(-0.2, 0.2, size=(dcgan.z_dim))
-      z_sample = np.tile(z, (config.batch_size, 1))
-      #z_sample = np.zeros([config.batch_size, dcgan.z_dim])
-      for kdx, z in enumerate(z_sample):
-        z[idx] = values[kdx]
-
-      if config.dataset == "mnist":
-        y = np.random.choice(10, config.batch_size)
-        y_one_hot = np.zeros((config.batch_size, 10))
-        y_one_hot[np.arange(config.batch_size), y] = 1
-
-        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
-      else:
-        samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-
-      try:
-        make_gif(samples, './samples/test_gif_%s.gif' % (idx))
-      except:
-        save_images(samples, [8, 8], './samples/test_%s.png' % strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-  elif option == 3:
-    values = np.arange(0, 1, 1./config.batch_size)
-    for idx in range(100):
-      print(" [*] %d" % idx)
-      z_sample = np.zeros([config.batch_size, dcgan.z_dim])
-      for kdx, z in enumerate(z_sample):
-        z[idx] = values[kdx]
-
-      samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-      make_gif(samples, './samples/test_gif_%s.gif' % (idx))
-  elif option == 4:
-    image_set = []
-    values = np.arange(0, 1, 1./config.batch_size)
-
-    for idx in range(100):
-      print(" [*] %d" % idx)
-      z_sample = np.zeros([config.batch_size, dcgan.z_dim])
-      for kdx, z in enumerate(z_sample): z[idx] = values[kdx]
-
-      image_set.append(sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample}))
-      make_gif(image_set[-1], './samples/test_gif_%s.gif' % (idx))
-
-    new_image_set = [merge(np.array([images[idx] for images in image_set]), [10, 10]) \
-        for idx in range(64) + range(63, -1, -1)]
-    make_gif(new_image_set, './samples/test_gif_merged.gif', duration=8)
+        
+    
+  

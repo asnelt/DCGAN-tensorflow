@@ -390,8 +390,7 @@ class DCGAN(object):
     t = np.arange(num_bins)
     
     peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,self.y_dim)
-    peaks1 = np.matlib.repmat(peaks1,int(np.round(num_samples/self.y_dim)),1)
-    peaks1 = np.reshape(peaks1,(peaks1.size,1))
+    peaks1 = np.tile(peaks1, (1,int(np.round(num_samples/self.y_dim)))).transpose()
     stims = np.unique(peaks1)
     X =np.zeros((peaks1.size,num_bins,1))
     y =np.zeros((peaks1.size,self.y_dim))

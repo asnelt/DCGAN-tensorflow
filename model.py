@@ -422,7 +422,7 @@ class DCGAN(object):
     if show_real_samples:
         plt.show()
     
-    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/real_samples.png',dpi=199, bbox_inches='tight')
+    fig.savefig('samples/real_samples.png',dpi=199, bbox_inches='tight')
     plt.close(fig)
     
     f,sbplt = plt.subplots(1,2)
@@ -432,7 +432,7 @@ class DCGAN(object):
     if show_real_samples:
         plt.show()
     
-    f.savefig('/home/manuel/DCGAN-tensorflow/samples/stim_tags.png', bbox_inches='tight')
+    f.savefig('samples/stim_tags.png', bbox_inches='tight')
     plt.close(f)
     
     #impose refractory period

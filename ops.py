@@ -115,7 +115,7 @@ def spk_autocorrelegram(r,name):
     f = plt.figure()
     index = np.linspace(-lag,lag,2*lag+1)
     plt.plot(index, ac)
-    f.savefig('/home/manuel/DCGAN-tensorflow/samples/refractory_period' + name + '.png', bbox_inches='tight')
+    f.savefig('samples/refractory_period' + name + '.png', bbox_inches='tight')
     plt.show()
     plt.close(f)
     

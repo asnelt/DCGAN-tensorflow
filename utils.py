@@ -167,17 +167,19 @@ def visualize(sess, dcgan, config):
     plt.close(fig)
     X[X>=0.5] = 1
     X[X<0.5] = 0
-    print(np.min(X))
-    print(np.max(X))
-    print(len(np.unique(X)))
-    ops.spk_autocorrelegram(X[:,:,0],'fake')   
-    samples_plot = X[np.arange(0,dcgan.batch_size),:,:]
+    binarize_X = (X>np.random.rand(X.shape[0],X.shape[1],X.shape[2]))
+    binarize_X = binarize_X.astype(float)
+    print(np.min(binarize_X))
+    print(np.max(binarize_X))
+    print(len(np.unique(binarize_X)))
+    ops.spk_autocorrelegram(binarize_X[:,:,0],'fake')   
+    samples_plot = binarize_X[np.arange(0,dcgan.batch_size),:,:]
     fig,sbplt = plt.subplots(8,8)
     for ind_pl in range(np.shape(samples_plot)[0]):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
         #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-    #fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
+    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)
 

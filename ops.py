@@ -7,8 +7,8 @@ Created on Thu Feb 23 10:47:58 2017
 """
 
 import tensorflow as tf
-
-
+import numpy as np
+import matplotlib.pyplot as plt
 class batch_norm(object):
   def __init__(self, epsilon=1e-5, momentum = 0.9, name="batch_norm"):
     with tf.variable_scope(name):
@@ -76,3 +76,46 @@ def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=
       return tf.matmul(input_, matrix) + bias, matrix, bias
     else:
       return tf.matmul(input_, matrix) + bias
+
+def refractory_period(refrPer,r,name):
+    print('imposing refractory period of ' + str(refrPer))
+    r = r[:,:,0]
+    margin = np.zeros((r.shape[0],refrPer))
+    r = np.hstack((margin,np.hstack((r,margin))))
+    r_flat = r.flatten()
+    spiketimes = np.nonzero(r_flat>0)
+    spiketimes = np.sort(spiketimes)
+    isis = np.diff(spiketimes)
+    too_close = np.nonzero(isis<=refrPer)
+    while len(too_close[0])>0:
+        spiketimes = np.delete(spiketimes,too_close[0][0]+1)
+        isis = np.diff(spiketimes)
+        too_close = np.nonzero(isis<=refrPer)
+        
+    r_flat = np.zeros(r_flat.shape)
+    r_flat[spiketimes] = 1
+    r = np.reshape(r_flat,r.shape)
+    r = r[:,refrPer:-refrPer]
+    spk_autocorrelegram(r,name)
+    r = np.expand_dims(r,2)
+    return r
+  
+def spk_autocorrelegram(r,name):
+    print('plot autocorrelogram')
+    lag = 10
+    margin = np.zeros((r.shape[0],lag))
+    r = np.hstack((margin,np.hstack((r,margin))))
+    r_flat = r.flatten()
+    spiketimes = np.nonzero(r_flat>0)
+    ac = np.zeros(2*lag+1)
+    for ind_spk in range(len(spiketimes[0])):
+        spike = spiketimes[0][ind_spk]
+        ac = ac + r_flat[spike-lag:spike+lag+1]
+        
+    f = plt.figure()
+    index = np.linspace(-lag,lag,2*lag+1)
+    plt.plot(index, ac)
+    f.savefig('/home/manuel/DCGAN-tensorflow/samples/refractory_period' + name + '.png', bbox_inches='tight')
+    plt.show()
+    plt.close(f)
+    

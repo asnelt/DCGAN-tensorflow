@@ -67,6 +67,9 @@ class DCGAN(object):
     self.dataset_name = dataset_name
     self.input_fname_pattern = input_fname_pattern
     self.checkpoint_dir = checkpoint_dir
+    
+    self.refrPer = 2
+    
     self.build_model()
 
   def build_model(self):
@@ -378,7 +381,7 @@ class DCGAN(object):
       
   def poisson_spike_trains(self):
     #create artificial data
-    num_samples = 80000
+    num_samples = 50000
     num_bins = 28
     firing_rate = 0.1
     noise = 0.01*firing_rate
@@ -401,6 +404,8 @@ class DCGAN(object):
         fr[fr<0] = 0
         r = np.random.poisson(fr)
         r[r>0] = 1
+        
+            
         X[ind,:,0] = r
         y[ind,stim] = 1
         counter[0][stim] = counter[0][stim] + 1
@@ -410,7 +415,9 @@ class DCGAN(object):
             sbplt[stim].plot(r[0])
             sbplt[stim].axis('off')
             
-            
+     
+    
+        
     show_real_samples = True#False
     if show_real_samples:
         plt.show()
@@ -428,6 +435,10 @@ class DCGAN(object):
     f.savefig('/home/manuel/DCGAN-tensorflow/samples/stim_tags.png', bbox_inches='tight')
     plt.close(f)
     
+    #impose refractory period
+    if self.refrPer>=0:
+        X = ops.refractory_period(self.refrPer,X,'real')    
+    
     X = X-np.min(X)
     y_vec = y
     # Shuffle images
@@ -440,6 +451,9 @@ class DCGAN(object):
   
     return X/X.max(),y_vec
 
+  
+  
+    
   @property
   def model_dir(self):
     return "{}_{}_{}".format(

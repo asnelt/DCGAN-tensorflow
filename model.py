@@ -31,11 +31,13 @@ if int(tf.__version__.split('.')[0]) < 1:
   tf.nn.sigmoid_cross_entropy_with_logits = compatibility_decorator(tf.nn.sigmoid_cross_entropy_with_logits)
 
 class DCGAN(object):
-  def __init__(self, sess, input_height=28, input_depth=1, is_crop=True,
-         batch_size=64, sample_num = 64, output_height=28, output_depth=1,
-         y_dim=20, z_dim=100, gf_dim=64, df_dim=64,
-         gfc_dim=1024, dfc_dim=1024, dataset_name='default',
-         input_fname_pattern='*.jpg', checkpoint_dir=None, sample_dir=None):
+  def __init__(self, sess, input_height=28, input_depth=1,
+               is_crop=True, batch_size=64, sample_num = 64,
+               output_height=28, output_depth=1, y_dim=20, z_dim=100,
+               gf_dim=64, df_dim=64, gfc_dim=1024, dfc_dim=1024,
+               kernel_n=20, kernel_d=20, dataset_name='default',
+               input_fname_pattern='*.jpg', checkpoint_dir=None,
+               sample_dir=None):
     """
 
     Args:
@@ -47,6 +49,8 @@ class DCGAN(object):
       df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
       gfc_dim: (optional) Dimension of gen units for for fully connected layer. [1024]
       dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
+      kernel_n: (optional) number of minibatch discrimination kernels. [20] Corresponds to 'B' in Salimans2016, where B=100.
+      kernel_d: (optional) dimensionality of minibatch discrimination kernels. [20] Corresponds to 'C' in Salimans2016, where C=50.
     """
     self.sess = sess
     self.is_crop = is_crop
@@ -70,6 +74,10 @@ class DCGAN(object):
 
     self.gfc_dim = gfc_dim
     self.dfc_dim = dfc_dim
+
+    # minibatch discrimination parameters
+    self.kernel_n = kernel_n
+    self.kernel_d = kernel_d
 
     # batch normalization : deals with poor initialization helps gradient flow
     self.d_bn1 = ops.batch_norm(name='d_bn1')
@@ -325,13 +333,50 @@ class DCGAN(object):
       
       #third layer (linear + batch norm. + relu)
       h2 = ops.lrelu(self.d_bn2(ops.linear(h1, self.dfc_dim, 'd_h2_lin')))
-      h2 = tf.concat([h2, y], 1)
+
+      ## Minibatch discrimination (from "improved GAN" paper, Salimans2016)
+      # reshape features so that each sample is represented by a 1D vector of length A (not really needed in 1D case)
+      h2_reshaped = tf.reshape(h2, [self.batch_size, -1], name='d_h3_reshaped');
+      # multiply feature vector by a tensor T of size AxBxC, where B
+      # is the number of kernels and C is the kernel dimensionality
+      # (actually we're multipling by a tensor of size Ax(BxC) and
+      # then reshaping the output to NxBxC, where N is the size of the
+      # batch)
+      M = tf.reshape(ops.linear(h2_reshaped, self.kernel_n * self.kernel_d),
+                     (self.batch_size, self.kernel_n, self.kernel_d))
+
+      # compute the negative exponential of the L1 distance between
+      # all samples i,j as given by the L1 norm taken separately for
+      # each kernel: c_b(x_i,x_j) = exp(-|M_{i,b}-M_{j,b}|) for all
+      # i,j,b.
+      exp_diff = tf.exp(-tf.reduce_sum(tf.abs(tf.expand_dims(M, 3) - tf.expand_dims(tf.transpose(M, [1, 2, 0]), 0)), 2))
+
+      # prepare binary mask that we need to select, for each neuron
+      # sample i, the distances to all other samples, as above we also
+      # computed the distances between each sample and itself.
+      big = np.zeros((self.batch_size, self.batch_size), dtype='float32')
+      big += np.eye(self.batch_size)
+      big = tf.expand_dims(big, 1)
+      mask = 1. - big
+
+      # compute the actual minibatch features, called o(x_i) by
+      # Salimans et al.
+      minibatch_features = tf.reduce_sum(exp_diff*mask, 2)
       
-      #forth layer (linear + sigmoid)
-      h3 = ops.linear(h2, 1, 'd_h3_lin')
-      return tf.nn.sigmoid(h3), h3#, h0_sum
+      print("original features: ", h2_reshaped.get_shape())
+      print("minibatch_features: ", minibatch_features.get_shape())
 
+      # concatenate original features, minibatch features and label indicator
+      x = tf.concat([h2_reshaped , minibatch_features, y], 1)
+      print("x: ", x.get_shape())
 
+      # final projection of extended feature vector      
+      h3 = ops.linear(x, 1, 'd_h3_lin')
+       
+      # compute sigmoid and return
+      return tf.nn.sigmoid(h3), h3
+
+    
   def generator(self, z, y=None):
     print('GENERATOR------------------------------------------')
     with tf.variable_scope("generator"):

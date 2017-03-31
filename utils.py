@@ -162,7 +162,7 @@ def visualize(sess, dcgan, config):
     fig = plt.figure()
     plt.plot(np.unique(X))
     
-    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/fake_samples_values.png', bbox_inches='tight')
+    fig.savefig('samples/fake_samples_values.png', bbox_inches='tight')
     plt.show()
     plt.close(fig)
     X[X>=0.5] = 1
@@ -179,7 +179,7 @@ def visualize(sess, dcgan, config):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
         #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-    fig.savefig('/home/manuel/DCGAN-tensorflow/samples/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
+    fig.savefig('samples/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)
 

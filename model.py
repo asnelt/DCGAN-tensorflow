@@ -14,15 +14,19 @@ import numpy as np
 from six.moves import xrange
 import matplotlib.pyplot as plt
 import ops
+from functools import wraps
 
+def compatibility_decorator(f):
+  @wraps(f)
+  def wrapper(*args, **kwds):
+    name = kwds.pop('name', None)
+    return f(targets=kwds['labels'], logits=kwds['logits'], name=name)
+  return wrapper
+   
 # compatibility for TF v<1.0
-if int(tensorflow.__version__.split('.')[0]) < 1:
+if int(tf.__version__.split('.')[0]) < 1:
   tf.concat = tf.concat_v2
-
-  def temp_wrapper(logits, labels, name=None):
-    return tf.nn_sigmoid_cross_entropy_with_logits(logits=logits, targets=labels, name=name)
-
-  tf.nn.sigmoid_cross_entropy_with_logits = temp_wrapper
+  tf.nn.sigmoid_cross_entropy_with_logits = compatibility_decorator(tf.nn.sigmoid_cross_entropy_with_logits)
 
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_depth=1, is_crop=True,

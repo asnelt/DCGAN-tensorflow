@@ -33,7 +33,7 @@ if int(tf.__version__.split('.')[0]) < 1:
 class DCGAN(object):
   def __init__(self, sess, input_height=28, input_depth=1,
                is_crop=True, batch_size=64, sample_num = 64,
-               output_height=28, output_depth=1, y_dim=20, z_dim=100,
+               output_height=28, output_depth=1, z_dim=100,
                gf_dim=64, df_dim=64, gfc_dim=1024, dfc_dim=1024,
                kernel_n=20, kernel_d=20, dataset_name='default',
                input_fname_pattern='*.jpg', checkpoint_dir=None,
@@ -43,7 +43,6 @@ class DCGAN(object):
     Args:
       sess: TensorFlow session
       batch_size: The size of batch. Should be specified before training.
-      y_dim: (optional) Dimension of dim for y. [10]
       z_dim: (optional) Dimension of dim for Z. [100]
       gf_dim: (optional) Dimension of gen filters in first conv layer. [64]
       df_dim: (optional) Dimension of discrim filters in first conv layer. [64]
@@ -55,7 +54,6 @@ class DCGAN(object):
     self.sess = sess
     self.is_crop = is_crop
     self.is_grayscale = True
-
     
     self.batch_size = batch_size
     self.sample_num = sample_num
@@ -66,7 +64,6 @@ class DCGAN(object):
     self.output_height = output_height
     self.output_depth = output_depth
 
-    self.y_dim = y_dim
     self.z_dim = z_dim
 
     self.gf_dim = gf_dim
@@ -91,8 +88,6 @@ class DCGAN(object):
     self.input_fname_pattern = input_fname_pattern
     self.checkpoint_dir = checkpoint_dir
     
-    self.refrPer = 2
-    
     self.build_model()
 
   def build_model(self):
@@ -104,9 +99,6 @@ class DCGAN(object):
     #fake samples
     self.sample_inputs = tf.placeholder(
       tf.float32, [self.sample_num] + image_dims, name='sample_inputs')
-
-    
- 
 
     #z
     self.z = tf.placeholder(
@@ -167,11 +159,8 @@ class DCGAN(object):
     #save training
     self.saver = tf.train.Saver()
 
-  def train(self, config):
+  def train(self, data, config):
     """Train DCGAN"""
-    #get data
-    data_X, _ = self.poisson_spike_trains()
-    
     #define optimizer
     d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
               .minimize(self.d_loss, var_list=self.d_vars)
@@ -196,7 +185,7 @@ class DCGAN(object):
 
     #samples for visualization (will be used for self.sampler)
     sample_z = np.random.uniform(-1, 1, size=(self.sample_num , self.z_dim))
-    sample_inputs = data_X[0:self.sample_num]
+    sample_inputs = data[0:self.sample_num]
     
     counter = 1
     start_time = time.time()
@@ -208,11 +197,11 @@ class DCGAN(object):
     combined_summary = tf.Summary()
     #start training
     for epoch in xrange(config.epoch):
-      batch_idxs = min(len(data_X), config.train_size) // config.batch_size
+      batch_idxs = min(len(data), config.train_size) // config.batch_size
       #go through all batches
       for idx in xrange(0, batch_idxs):
         #get batches
-        batch_images = data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+        batch_images = data[idx*config.batch_size:(idx+1)*config.batch_size]
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         
@@ -285,13 +274,9 @@ class DCGAN(object):
             time.time() - start_time, 
             errD_fake+errD_real, errG))
 
-        
-
         #save training every 500 batches
         if np.mod(counter, 500) == 2:
           self.save(config.checkpoint_dir, counter)
-
-          
           
   def discriminator(self, image, reuse=False):
     print('DISCRIMINATOR------------------------------------------')
@@ -357,7 +342,6 @@ class DCGAN(object):
        
       # compute sigmoid and return
       return tf.nn.sigmoid(h3), h3
-
     
   def generator(self, z):
     print('GENERATOR------------------------------------------')
@@ -382,7 +366,6 @@ class DCGAN(object):
       #third layer (deconv 1d + signmoid, no batch norm.)
       return tf.nn.sigmoid(
           ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
-
   
   #this function is the same as the generator, but it is just retrieve samples 
   #(note the train=false of lines 335 and 340)
@@ -405,80 +388,6 @@ class DCGAN(object):
 
       return tf.nn.sigmoid(ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
 
-      
-  def poisson_spike_trains(self):
-    #create artificial data
-    num_samples = 50000
-    num_bins = 28
-    firing_rate = 0.1
-    noise = 0.01*firing_rate
-    margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
-    std_resp = 4 #std of the gaussian defining the firing rates
-    t = np.arange(num_bins)
-    
-    peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,self.y_dim)
-    peaks1 = np.tile(peaks1, (1,int(np.round(num_samples/self.y_dim)))).transpose()
-    stims = np.unique(peaks1)
-    X =np.zeros((peaks1.size,num_bins,1))
-    y =np.zeros((peaks1.size,self.y_dim))
-    fig,sbplt = plt.subplots(1,self.y_dim)
-    counter = np.zeros((1,self.y_dim))
-    for ind in range(peaks1.size):
-        stim = np.nonzero(stims==peaks1[ind])
-        stim = int(stim[0])
-        fr = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
-        fr[fr<0] = 0
-        r = np.random.poisson(fr)
-        r[r>0] = 1
-        
-            
-        X[ind,:,0] = r
-        y[ind,stim] = 1
-        counter[0][stim] = counter[0][stim] + 1
-        if counter[0][stim]==1:
-            sbplt[stim].plot(fr[0],linewidth=4.0)
-        if counter[0][stim]<=10:
-            sbplt[stim].plot(r[0])
-            sbplt[stim].axis('off')
-            
-     
-    
-        
-    show_real_samples = True#False
-    if show_real_samples:
-        plt.show()
-    
-    fig.savefig('samples/real_samples.png',dpi=199, bbox_inches='tight')
-    plt.close(fig)
-    
-    f,sbplt = plt.subplots(1,2)
-    sbplt[0].plot(counter[0])
-    sbplt[1].imshow(y[1:100,:])
-    
-    if show_real_samples:
-        plt.show()
-    
-    f.savefig('samples/stim_tags.png', bbox_inches='tight')
-    plt.close(f)
-    
-    #impose refractory period
-    if self.refrPer>=0:
-        X = ops.refractory_period(self.refrPer,X,'real')    
-    
-    X = X-np.min(X)
-    # Shuffle images
-    seed = 547
-    np.random.seed(seed)
-    np.random.shuffle(X)
-    np.random.seed(seed)
-    np.random.shuffle(y)
-   
-  
-    return X/X.max(),y
-
-  
-  
-    
   @property
   def model_dir(self):
     return "{}_{}_{}".format(

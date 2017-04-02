@@ -146,30 +146,46 @@ def make_gif(images, fname, duration=2, true_image=False):
   clip = mpy.VideoClip(make_frame, duration=duration)
   clip.write_gif(fname, fps = len(images) / duration)
 
+def spk_autocorrelogram(r, name):
+    print('plot autocorrelogram')
+    lag = 10
+    margin = np.zeros((r.shape[0],lag))
+    r = np.hstack((margin,np.hstack((r,margin))))
+    r_flat = r.flatten()
+    spiketimes = np.nonzero(r_flat>0)
+    ac = np.zeros(2*lag+1)
+    for ind_spk in range(len(spiketimes[0])):
+        spike = spiketimes[0][ind_spk]
+        ac = ac + r_flat[spike-lag:spike+lag+1]
+        
+    f = plt.figure()
+    index = np.linspace(-lag,lag,2*lag+1)
+    plt.plot(index, ac)
+    f.savefig('samples/refractory_period' + name + '.png', bbox_inches='tight')
+    plt.show()
+    plt.close(f)
+ 
 def visualize(sess, dcgan, config):
     num_samples = int(2**15)
     num_trials = int(num_samples/dcgan.batch_size)
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
     for ind_tr in range(num_trials):
         z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
-        X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-        
-    
+        X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] \
+                = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+            
     fig = plt.figure()
     plt.plot(np.unique(X))
     
     fig.savefig('samples/fake_samples_values.png', bbox_inches='tight')
     plt.show()
     plt.close(fig)
-    X[X>=0.5] = 1
-    X[X<0.5] = 0
-    binarize_X = (X>np.random.rand(X.shape[0],X.shape[1],X.shape[2]))
-    binarize_X = binarize_X.astype(float)
-    print(np.min(binarize_X))
-    print(np.max(binarize_X))
-    print(len(np.unique(binarize_X)))
-    ops.spk_autocorrelegram(binarize_X[:,:,0],'fake')   
-    samples_plot = binarize_X[np.arange(0,dcgan.batch_size),:,:]
+    binarized_X = ops.binarize(X)
+    print(np.min(binarized_X))
+    print(np.max(binarized_X))
+    print(len(np.unique(binarized_X)))
+    spk_autocorrelogram(binarized_X[:,:,0],'fake')   
+    samples_plot = binarized_X[np.arange(0,dcgan.batch_size),:,:]
     fig,sbplt = plt.subplots(8,8)
     for ind_pl in range(np.shape(samples_plot)[0]):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
@@ -178,10 +194,3 @@ def visualize(sess, dcgan, config):
     fig.savefig('samples/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)
-
-      
-      
-
-        
-    
-  

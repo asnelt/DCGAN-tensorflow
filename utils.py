@@ -152,11 +152,7 @@ def visualize(sess, dcgan, config):
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
     for ind_tr in range(num_trials):
         z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
-        y = np.random.choice(dcgan.y_dim, dcgan.batch_size)
-        y_one_hot = np.zeros((dcgan.batch_size, dcgan.y_dim))
-        y_one_hot[np.arange(dcgan.batch_size), y] = 1
-        
-        X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample, dcgan.y: y_one_hot})
+        X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
         
     
     fig = plt.figure()

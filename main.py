@@ -25,7 +25,7 @@ flags.DEFINE_integer("input_height", 28, "The height of movies to use (will be c
 flags.DEFINE_integer("input_depth", 1, "The length of movies to use (will be center cropped) [1]")
 flags.DEFINE_integer("output_height", 28, "The height of the output movies to produce [28]")
 flags.DEFINE_integer("output_depth", 1, "The length of the output movies to produce [1]")
-flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*i.jpg]")
+flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*.jpg]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")

@@ -76,7 +76,7 @@ def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=
     else:
       return tf.matmul(input_, matrix) + bias
 
-def binarize(samples, theshold=None):
+def binarize(samples, threshold=None):
   '''
   Returns binarized samples by thresholding with `threshold`. If `threshold` is `None` then the
   elements of `samples` are used as probabilities for drawing Bernoulli variates.

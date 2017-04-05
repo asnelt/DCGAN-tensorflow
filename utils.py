@@ -173,12 +173,7 @@ def get_samples_autocorrelogram(sess, dcgan,name):
         z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
         X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] \
                 = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    fig = plt.figure()
-    plt.plot(np.unique(X))
     
-    fig.savefig('samples/fake_samples_values.png', bbox_inches='tight')
-    plt.show()
-    plt.close(fig)  
     binarized_X = ops.binarize(X)
     spk_autocorrelogram(binarized_X[:,:,0],name)  
     

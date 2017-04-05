@@ -80,7 +80,7 @@ def binarize(samples, threshold=None):
   Returns binarized samples by thresholding with `threshold`. If `threshold` is `None` then the
   elements of `samples` are used as probabilities for drawing Bernoulli variates.
   '''
-  if 'threshold' in locals():
+  if threshold is not None:
     binarized_samples = samples > threshold
   else:
     #use samples as probabilities for drawing Bernoulli random variates

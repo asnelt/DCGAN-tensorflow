@@ -184,9 +184,17 @@ def get_samples_autocorrelogram(sess, dcgan,name,folder):
     binarized_X = ops.binarize(X)
     binarized_X_reduced = binarized_X[:,:,0]
     
+    #compute autocorrelogram
     spk_autocorrelogram(binarized_X_reduced,name,folder)  
     
-    
+    #compute average activity
+    f = plt.figure()
+    aux = np.mean(binarized_X_reduced,axis=0)
+    plt.plot(aux)
+    f.savefig(folder + '/average_activity' + name + '.png', bbox_inches='tight')
+    plt.show()
+    plt.close(f)
+      
 def get_samples(sess,dcgan,folder):    
     z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
     samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
@@ -195,7 +203,6 @@ def get_samples(sess,dcgan,folder):
     for ind_pl in range(np.shape(samples_plot)[0]):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
-        #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
     fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)

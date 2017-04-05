@@ -32,8 +32,8 @@ flags.DEFINE_boolean("is_train", False, "True for training, False for testing [F
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 #parameter set specifiying data
-flags.DEFINE_string("dataset", "artificial_spike_trains", "The name of dataset [artificial_spike_trains]")
-flags.DEFINE_integer("num_classes", 3, "Number of sample classes [3]")
+flags.DEFINE_string("dataset", "gaussian_fr", "The name of dataset. It can have a gaussian or uniform shape")
+flags.DEFINE_integer("num_classes", 1, "Number of sample classes [3]")
 flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000]")
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
@@ -42,10 +42,10 @@ FLAGS = flags.FLAGS
 
 def main(_):
   pp.pprint(flags.FLAGS.__flags)
-  FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_num_classes_' + str(FLAGS.num_classes) + \
+  FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_dataset_' + str(FLAGS.dataset) + '_num_classes_' + str(FLAGS.num_classes) + \
   '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
   
-  FLAGS.sample_dir = FLAGS.sample_dir + '_num_classes_' + str(FLAGS.num_classes) + \
+  FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + str(FLAGS.dataset) + '_num_classes_' + str(FLAGS.num_classes) + \
   '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
   
   if not os.path.exists(FLAGS.checkpoint_dir):
@@ -73,7 +73,7 @@ def main(_):
 
     if FLAGS.is_train:
       #import or generate data
-      data_provider = DataProvider(FLAGS.dataset, FLAGS)
+      data_provider = DataProvider(FLAGS)
       if FLAGS.visualize_data:
         data_provider.visualize()
       dcgan.train(data_provider.data, FLAGS)
@@ -88,6 +88,7 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
+    DataProvider(FLAGS.dataset, FLAGS)
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
     get_samples(sess, dcgan,FLAGS.sample_dir)
 

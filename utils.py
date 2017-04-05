@@ -146,7 +146,7 @@ def make_gif(images, fname, duration=2, true_image=False):
   clip = mpy.VideoClip(make_frame, duration=duration)
   clip.write_gif(fname, fps = len(images) / duration)
 
-def spk_autocorrelogram(r, name):
+def spk_autocorrelogram(r, name,folder):
     print('plot autocorrelogram')
     #first we get the average and std of the spike-count 
     mean_spk_count = np.mean(np.sum(r,axis=1))
@@ -165,14 +165,14 @@ def spk_autocorrelogram(r, name):
     index = np.linspace(-lag,lag,2*lag+1)
     plt.plot(index, ac)
     plt.title('mean spk-count = ' + str(round(mean_spk_count,3)) + ' (' + str(round(std_spk_count,3)) + ')')
-    f.savefig('samples/autocorrelogram' + name + '.png', bbox_inches='tight')
+    f.savefig(folder + '/autocorrelogram' + name + '.png', bbox_inches='tight')
     plt.show()
     plt.close(f)
     data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index}
-    np.savez('samples/autocorrelogram' + name + '.npz', **data)
+    np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
     
-def get_samples_autocorrelogram(sess, dcgan,name):
+def get_samples_autocorrelogram(sess, dcgan,name,folder):
     num_samples = int(2**15)
     num_trials = int(num_samples/dcgan.batch_size)
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
@@ -184,10 +184,10 @@ def get_samples_autocorrelogram(sess, dcgan,name):
     binarized_X = ops.binarize(X)
     binarized_X_reduced = binarized_X[:,:,0]
     
-    spk_autocorrelogram(binarized_X_reduced,name)  
+    spk_autocorrelogram(binarized_X_reduced,name,folder)  
     
     
-def get_samples(sess,dcgan):    
+def get_samples(sess,dcgan,folder):    
     z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
     samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
     samples_plot = ops.binarize(samples_plot)
@@ -196,6 +196,6 @@ def get_samples(sess,dcgan):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
         #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-    fig.savefig('samples/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
+    fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)

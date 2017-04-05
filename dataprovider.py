@@ -22,7 +22,7 @@ def generate_spike_trains(parameters):
     num_classes = parameters.num_classes
     num_samples = parameters.num_samples
     num_bins = parameters.num_bins
-    refr_per = -1 # Refractory period
+    refr_per = parameters.ref_period
     firing_rate = 0.1
     noise = 0.01*firing_rate
     margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
@@ -60,7 +60,7 @@ def generate_spike_trains(parameters):
         if show_real_samples:
             plt.show()
 
-        fig.savefig('samples/real_samples.png',dpi=199, bbox_inches='tight')
+        fig.savefig(parameters.sample_dir + '/real_samples.png',dpi=199, bbox_inches='tight')
         plt.close(fig)
 
         f,sbplt = plt.subplots(1,2)
@@ -70,7 +70,7 @@ def generate_spike_trains(parameters):
         if show_real_samples:
             plt.show()
     
-        f.savefig('samples/stim_tags.png', bbox_inches='tight')
+        f.savefig(parameters.sample_dir + '/stim_tags.png', bbox_inches='tight')
         plt.close(f)
     
     #impose refractory period
@@ -78,7 +78,7 @@ def generate_spike_trains(parameters):
         X = refractory_period(refr_per,X)  
         
     #get autocorrelogram
-    spk_autocorrelogram(X[:,:,0],'real')
+    spk_autocorrelogram(X[:,:,0],'real', parameters.sample_dir)
     
     
     X = X-np.min(X)

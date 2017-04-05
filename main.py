@@ -36,12 +36,18 @@ flags.DEFINE_string("dataset", "artificial_spike_trains", "The name of dataset [
 flags.DEFINE_integer("num_classes", 3, "Number of sample classes [3]")
 flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000]")
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
+flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
 flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
 FLAGS = flags.FLAGS
 
 def main(_):
   pp.pprint(flags.FLAGS.__flags)
-
+  FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_num_classes_' + str(FLAGS.num_classes) + \
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
+  
+  FLAGS.sample_dir = FLAGS.sample_dir + '_num_classes_' + str(FLAGS.num_classes) + \
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
+  
   if not os.path.exists(FLAGS.checkpoint_dir):
     os.makedirs(FLAGS.checkpoint_dir)
   if not os.path.exists(FLAGS.sample_dir):
@@ -82,8 +88,8 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    get_samples_autocorrelogram(sess, dcgan,'fake')
-    get_samples(sess, dcgan)
+    get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
+    get_samples(sess, dcgan,FLAGS.sample_dir)
 
 if __name__ == '__main__':
   tf.app.run()

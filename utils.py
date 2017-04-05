@@ -165,7 +165,7 @@ def spk_autocorrelogram(r, name):
     plt.show()
     plt.close(f)
  
-def visualize(sess, dcgan, config):
+def get_samples_autocorrelogram(sess, dcgan,name):
     num_samples = int(2**15)
     num_trials = int(num_samples/dcgan.batch_size)
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
@@ -173,19 +173,19 @@ def visualize(sess, dcgan, config):
         z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
         X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] \
                 = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-            
     fig = plt.figure()
     plt.plot(np.unique(X))
     
     fig.savefig('samples/fake_samples_values.png', bbox_inches='tight')
     plt.show()
-    plt.close(fig)
+    plt.close(fig)  
     binarized_X = ops.binarize(X)
-    print(np.min(binarized_X))
-    print(np.max(binarized_X))
-    print(len(np.unique(binarized_X)))
-    spk_autocorrelogram(binarized_X[:,:,0],'fake')   
-    samples_plot = binarized_X[np.arange(0,dcgan.batch_size),:,:]
+    spk_autocorrelogram(binarized_X[:,:,0],name)  
+    
+def get_samples(sess,dcgan):    
+    z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+    samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+    samples_plot = ops.binarize(samples_plot)
     fig,sbplt = plt.subplots(8,8)
     for ind_pl in range(np.shape(samples_plot)[0]):
         sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])

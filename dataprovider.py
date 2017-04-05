@@ -22,7 +22,7 @@ def generate_spike_trains(parameters):
     num_classes = parameters.num_classes
     num_samples = parameters.num_samples
     num_bins = parameters.num_bins
-    refr_per = 2 # Refractory period
+    refr_per = -1 # Refractory period
     firing_rate = 0.1
     noise = 0.01*firing_rate
     margin = 6 #num bins from the middle one that the response peaks will span (see line 389)

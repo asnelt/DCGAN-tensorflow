@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from model import DCGAN
-from utils import pp, visualize
+from utils import pp, get_samples_autocorrelogram, get_samples
 from dataprovider import DataProvider
 
 import tensorflow as tf
@@ -82,7 +82,8 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    visualize(sess, dcgan, FLAGS)
+    get_samples_autocorrelogram(sess, dcgan,'fake')
+    get_samples(sess, dcgan)
 
 if __name__ == '__main__':
   tf.app.run()

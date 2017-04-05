@@ -8,7 +8,6 @@ Created on Thu Feb 23 10:47:58 2017
 
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
 class batch_norm(object):
   def __init__(self, epsilon=1e-5, momentum = 0.9, name="batch_norm"):
     with tf.variable_scope(name):

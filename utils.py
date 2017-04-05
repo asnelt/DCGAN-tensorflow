@@ -148,6 +148,9 @@ def make_gif(images, fname, duration=2, true_image=False):
 
 def spk_autocorrelogram(r, name):
     print('plot autocorrelogram')
+    #first we get the average and std of the spike-count 
+    mean_spk_count = np.mean(np.sum(r,axis=1))
+    std_spk_count = np.std(np.sum(r,axis=1))
     lag = 10
     margin = np.zeros((r.shape[0],lag))
     r = np.hstack((margin,np.hstack((r,margin))))
@@ -161,10 +164,14 @@ def spk_autocorrelogram(r, name):
     f = plt.figure()
     index = np.linspace(-lag,lag,2*lag+1)
     plt.plot(index, ac)
-    f.savefig('samples/refractory_period' + name + '.png', bbox_inches='tight')
+    plt.title('mean spk-count = ' + str(round(mean_spk_count,3)) + ' (' + str(round(std_spk_count,3)) + ')')
+    f.savefig('samples/autocorrelogram' + name + '.png', bbox_inches='tight')
     plt.show()
     plt.close(f)
- 
+    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index}
+    np.savez('samples/autocorrelogram' + name + '.npz', **data)
+    
+    
 def get_samples_autocorrelogram(sess, dcgan,name):
     num_samples = int(2**15)
     num_trials = int(num_samples/dcgan.batch_size)
@@ -175,7 +182,10 @@ def get_samples_autocorrelogram(sess, dcgan,name):
                 = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
     
     binarized_X = ops.binarize(X)
-    spk_autocorrelogram(binarized_X[:,:,0],name)  
+    binarized_X_reduced = binarized_X[:,:,0]
+    
+    spk_autocorrelogram(binarized_X_reduced,name)  
+    
     
 def get_samples(sess,dcgan):    
     z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))

@@ -75,8 +75,12 @@ def generate_spike_trains(parameters):
     
     #impose refractory period
     if refr_per>=0:
-        X = refractory_period(refr_per,X,'real')    
-
+        X = refractory_period(refr_per,X)  
+        
+    #get autocorrelogram
+    spk_autocorrelogram(X[:,:,0],'real')
+    
+    
     X = X-np.min(X)
     # Shuffle samples
     seed = 547
@@ -87,7 +91,7 @@ def generate_spike_trains(parameters):
   
     return X/X.max(), y
 
-def refractory_period(refr_per, r, name):
+def refractory_period(refr_per, r):
     print('imposing refractory period of ' + str(refr_per))
     r = r[:,:,0]
     margin = np.zeros((r.shape[0],refr_per))
@@ -106,6 +110,5 @@ def refractory_period(refr_per, r, name):
     r_flat[spiketimes] = 1
     r = np.reshape(r_flat,r.shape)
     r = r[:,refr_per:-refr_per]
-    spk_autocorrelogram(r,name)
     r = np.expand_dims(r,2)
     return r

@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import ops
+import utils
 from functools import wraps
 
 def compatibility_decorator(f):
@@ -205,7 +206,7 @@ class DCGAN(object):
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         
-        #every 100 batches, we get and save a sample (note that the inputs are always the same)
+        #every 500 batches, we get and save a sample (note that the inputs are always the same)
         if np.mod(counter, 500) == 1 or (epoch==0 and idx<=100):
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
@@ -221,10 +222,13 @@ class DCGAN(object):
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
               #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
           fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
-          #print('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-          #plt.show()
           plt.close(fig)
-   
+          
+          
+        if counter % 1000 == 0:
+          #get autocorrelogram
+          utils.get_samples_autocorrelogram(self.sess, self,'train_{:02d}_{:04d}'.format(epoch, idx))
+          
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
 
         # Update D network

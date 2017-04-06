@@ -88,7 +88,7 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    DataProvider(FLAGS.dataset, FLAGS)
+    DataProvider(FLAGS)
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
     get_samples(sess, dcgan,FLAGS.sample_dir)
 

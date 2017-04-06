@@ -225,7 +225,7 @@ class DCGAN(object):
           plt.close(fig)
           
           
-        if counter % 500 == 1:
+        if counter % 500 == 1:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
           utils.get_samples_autocorrelogram(self.sess, self,'train_{:02d}_{:04d}'.format(epoch, idx), config.sample_dir)
           
@@ -250,10 +250,11 @@ class DCGAN(object):
             self.z: batch_z 
           })
         combined_summary.MergeFromString(summary_str)
+
         if (counter+1) % 1000 == 0:
             self.writer.add_summary(combined_summary,counter)
             combined_summary = tf.Summary()
-        #self.writer.add_summary(summary_str, counter)
+
         # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
         _, summary_str = self.sess.run([g_optim, self.g_sum],
           feed_dict={ 

@@ -189,7 +189,7 @@ def get_samples_autocorrelogram(sess, dcgan,name,folder):
     
     #compute average activity
     f = plt.figure()
-    aux = np.mean(binarized_X_reduced,axis=0)
+    aux = np.mean(X[:,:,0],axis=0)
     plt.plot(aux)
     f.savefig(folder + '/average_activity' + name + '.png', bbox_inches='tight')
     plt.show()

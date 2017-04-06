@@ -1,6 +1,7 @@
 from utils import spk_autocorrelogram
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class DataProvider(object):
@@ -48,7 +49,7 @@ def generate_spike_trains(parameters):
                 
             X[ind,:,0] = r
             y[ind,stim] = 1
-            counter[0][stim] = counter[0][stim] + 1
+            counter[0,stim] += 1
             if parameters.visualize_data:
                 if counter[0][stim]==1:
                     if num_classes>1:
@@ -74,6 +75,42 @@ def generate_spike_trains(parameters):
             fig = plt.figure()
             samples_plot = X[0:9,:,0]
             plt.plot(np.transpose(samples_plot))
+            
+            
+    elif parameters.dataset=='calcium_transients':
+        datasets = ['1','2','3','4','5','6','7','8','9','10']
+        X =np.zeros((1000000,num_bins,1))
+        y =np.zeros((1000000,10))
+        contador = 0
+        counter = np.zeros((1,10))
+        if parameters.visualize_data:
+            fig,sbplt = plt.subplots(2,5)
+        for ind in range(len(datasets)):
+            dataset = datasets[ind]
+            calcium_train = pd.Series.as_matrix(pd.read_csv('/home/manuel/Desktop/spikefinder.train/' + dataset + '.train.calcium.csv'))
+            spikes_train = pd.Series.as_matrix(pd.read_csv( '/home/manuel/Desktop/spikefinder.train/' + dataset + '.train.spikes.csv'))
+            
+            for ind_n in range(np.shape(spikes_train)[1]):
+                calcium = calcium_train[:,ind_n]
+                spikes = spikes_train[:,ind_n]
+                spiketimes = np.nonzero(spikes)[0]
+                spiketimes = spiketimes[np.nonzero(spiketimes>num_bins)]
+                spiketimes = spiketimes[np.nonzero(spiketimes<(len(calcium)-num_bins))]
+                
+                for ind_spk in range(len(spiketimes)):
+                    transient = calcium[spiketimes[ind_spk]-int(num_bins/4):spiketimes[ind_spk]+int(3*num_bins/4)]
+                    if len(np.nonzero(np.isnan(transient))[0])==0:
+                        contador += 1
+                        X[contador,:,0] = transient
+                        y[contador,ind] = 1
+                        counter[0,ind] += 1
+                        if parameters.visualize_data:
+                            if counter[0,ind]<=10:  
+                                sbplt[int(np.floor(ind/5))][int(ind%5)].plot(transient)
+                                sbplt[int(np.floor(ind/5))][int(ind%5)].axis('off')
+                                
+        X = X[0:contador,:,:]
+        y = y[0:contador,:]
     else:
         raise ValueError("Unknown dataset '" + parameters.dataset + "'")
         
@@ -93,14 +130,16 @@ def generate_spike_trains(parameters):
     
         f.savefig(parameters.sample_dir + '/stim_tags.png', bbox_inches='tight')
         plt.close(f)
-    
-    #impose refractory period
-    if refr_per>=0:
-        X = refractory_period(refr_per,X)  
         
-    #get autocorrelogram
+        
     X_reduced = X[:,:,0]
-    spk_autocorrelogram(X_reduced,'real', parameters.sample_dir)
+    if parameters.dataset!='calcium_transients':
+        #impose refractory period
+        if refr_per>=0:
+            X = refractory_period(refr_per,X)  
+            
+        #get autocorrelogram
+        spk_autocorrelogram(X_reduced,'real', parameters.sample_dir)
     
     #compute average activity
     f = plt.figure()
@@ -117,7 +156,7 @@ def generate_spike_trains(parameters):
     np.random.shuffle(X)
     np.random.seed(seed)
     np.random.shuffle(y)
-  
+    print(np.shape(X))
     return X/X.max(), y
 
 def refractory_period(refr_per, r):

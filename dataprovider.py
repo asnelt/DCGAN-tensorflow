@@ -132,15 +132,17 @@ def generate_spike_trains(parameters):
         plt.close(f)
         
         
-    X_reduced = X[:,:,0]
+    
     if parameters.dataset!='calcium_transients':
         #impose refractory period
         if refr_per>=0:
             X = refractory_period(refr_per,X)  
-            
+        X_reduced = X[:,:,0]   
         #get autocorrelogram
         spk_autocorrelogram(X_reduced,'real', parameters.sample_dir)
-    
+    else:
+        X_reduced = X[:,:,0]
+        
     #compute average activity
     f = plt.figure()
     aux = np.mean(X_reduced,axis=0)
@@ -156,8 +158,12 @@ def generate_spike_trains(parameters):
     np.random.shuffle(X)
     np.random.seed(seed)
     np.random.shuffle(y)
-    print(np.shape(X))
-    return X/X.max(), y
+    
+    X = X/X.max()
+    data = {'real_samples':X,'labels':y}
+    np.savez(parameters.sample_dir + '/data.npz', **data)
+    
+    return X, y
 
 def refractory_period(refr_per, r):
     print('imposing refractory period of ' + str(refr_per))
@@ -173,7 +179,6 @@ def refractory_period(refr_per, r):
         spiketimes = np.delete(spiketimes,too_close[0][0]+1)
         isis = np.diff(spiketimes)
         too_close = np.nonzero(isis<=refr_per)
-        
     r_flat = np.zeros(r_flat.shape)
     r_flat[spiketimes] = 1
     r = np.reshape(r_flat,r.shape)

@@ -220,7 +220,8 @@ class DCGAN(object):
           for ind_pl in range(np.shape(samples_plot)[0]):
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
-              #fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
+              if ind_pl==0:
+                  fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
           fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
           plt.close(fig)
           

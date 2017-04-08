@@ -34,6 +34,7 @@ flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothin
 #parameter set specifiying data
 flags.DEFINE_string("dataset", "gaussian_fr", "The name of dataset. It can have a gaussian or uniform shape")
 flags.DEFINE_integer("num_classes", 1, "Number of sample classes [3]")
+flags.DEFINE_string("classes_proportion", 'equal', "this will control the proportion of each class. It can be 'equal' or '7030'")
 flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000]")
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
@@ -42,10 +43,10 @@ FLAGS = flags.FLAGS
 
 def main(_):
   pp.pprint(flags.FLAGS.__flags)
-  FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_dataset_' + str(FLAGS.dataset) + '_num_classes_' + str(FLAGS.num_classes) + \
+  FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
   '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
   
-  FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + str(FLAGS.dataset) + '_num_classes_' + str(FLAGS.num_classes) + \
+  FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
   '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
   
   if not os.path.exists(FLAGS.checkpoint_dir):

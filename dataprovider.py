@@ -25,19 +25,24 @@ def generate_spike_trains(parameters):
         noise = 0.01*firing_rate
         margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
         std_resp = 4 #std of the gaussian defining the firing rates
+        if parameters.classes_proportion=='equal':
+            mat_prop_classes = np.ones((num_classes,))/num_classes
+        elif parameters.classes_proportion=='7030':    
+            mat_prop_classes = [0.7,0.3]
+        else:
+            raise ValueError("Unknown dataset '" + parameters.classes_proportion + "'")
+             
+            
         t = np.arange(num_bins)
         
         peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,num_classes)
-        peaks1 = np.tile(peaks1, (1,int(np.round(num_samples/num_classes)))).transpose()
-        stims = np.unique(peaks1)
-        X =np.zeros((peaks1.size,num_bins,1))
-        y =np.zeros((peaks1.size,num_classes))
+        X =np.zeros((num_samples,num_bins,1))
+        y =np.zeros((num_samples,num_classes))
         
         counter = np.zeros((1,num_classes))
-        for ind in range(peaks1.size):
-            stim = np.nonzero(stims==peaks1[ind])
-            stim = int(stim[0])
-            fr = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+        for ind in range(num_samples):
+            stim = np.random.choice(num_classes,p=mat_prop_classes)
+            fr = firing_rate*np.exp(-(t-peaks1[stim])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
             fr[fr<0] = 0
             r = fr > np.random.random(fr.shape)
             r = r.astype(float)

@@ -39,7 +39,8 @@ def generate_spike_trains(parameters):
             stim = int(stim[0])
             fr = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
             fr[fr<0] = 0
-            r = np.random.poisson(fr)
+            r = fr > np.random.random(fr.shape)
+            r = r.astype(float)
             r[r>0] = 1
                 
             X[ind,:,0] = r
@@ -47,7 +48,8 @@ def generate_spike_trains(parameters):
             counter[0,stim] += 1
             
     elif parameters.dataset=='uniform_fr':
-        X =np.random.poisson(np.zeros((num_samples,num_bins,1)) + firing_rate)
+        X = (np.zeros((num_samples,num_bins,1)) + firing_rate) > np.random.random((num_samples,num_bins,1))
+        X = X.astype(float)
         X[X>0] = 1
         y = np.ones((num_samples, 1))
         counter = np.zeros((1,num_classes))
@@ -92,6 +94,13 @@ def generate_spike_trains(parameters):
         raise ValueError("Unknown dataset '" + parameters.dataset + "'")
                   
         
+    #compute average activity
+    f = plt.figure()
+    aux = np.mean(X[:,:,0],axis=0)
+    plt.plot(aux)
+    f.savefig(parameters.sample_dir + '/average_activity_real_before_refrPeriod.png', bbox_inches='tight')
+    plt.show()
+    plt.close(f)
     
     if parameters.dataset!='calcium_transients':
         #impose refractory period
@@ -195,10 +204,11 @@ def refractory_period(refr_per, r, firing_rate):
 
 def refractory_period_control(refr_per, r, firing_rate):
     print('imposing refractory period of ' + str(refr_per))
-    r = r[:,:,0]       
+    r = r[:,:,0]    
+    margin_length = 2*np.shape(r)[1]
     for ind_tr in range(int(np.shape(r)[0])):
         r_aux = r[ind_tr,:]
-        margin1 = np.random.poisson(np.zeros((refr_per,))+firing_rate)
+        margin1 = np.random.poisson(np.zeros((margin_length,))+firing_rate)
         margin1[margin1>0] = 1
         r_aux = np.hstack((margin1,r_aux))
         spiketimes = np.nonzero(r_aux>0)
@@ -209,8 +219,10 @@ def refractory_period_control(refr_per, r, firing_rate):
             spiketimes = np.delete(spiketimes,too_close[0][0]+1)
             isis = np.diff(spiketimes)
             too_close = np.nonzero(isis<=refr_per)
+        
         r_aux = np.zeros(r_aux.shape)
         r_aux[spiketimes] = 1
-        r[ind_tr,:] = r_aux[refr_per:]
+            
+        r[ind_tr,:] = r_aux[margin_length:]
     r = np.expand_dims(r,2)
     return r

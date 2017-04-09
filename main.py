@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from model import DCGAN
-from utils import pp, get_samples_autocorrelogram, get_samples
+from utils import pp, get_samples_autocorrelogram, get_samples, evaluate_training
 from dataprovider import DataProvider
 
 import tensorflow as tf
@@ -37,6 +37,7 @@ flags.DEFINE_integer("num_classes", 1, "Number of sample classes [3]")
 flags.DEFINE_string("classes_proportion", 'equal', "this will control the proportion of each class. It can be 'equal' or '7030'")
 flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000]")
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
+flags.DEFINE_integer("iteration", 0, "in case several instances are run with the same parameters")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
 flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
 FLAGS = flags.FLAGS
@@ -44,10 +45,10 @@ FLAGS = flags.FLAGS
 def main(_):
   pp.pprint(flags.FLAGS.__flags)
   FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
-  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_iteration_' + FLAGS.iteration
   
   FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
-  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period)
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_iteration_' + FLAGS.iteration
   
   if not os.path.exists(FLAGS.checkpoint_dir):
     os.makedirs(FLAGS.checkpoint_dir)
@@ -89,9 +90,9 @@ def main(_):
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    DataProvider(FLAGS)
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
     get_samples(sess, dcgan,FLAGS.sample_dir)
+    evaluate_training(FLAGS.sample_dir)
 
 if __name__ == '__main__':
   tf.app.run()

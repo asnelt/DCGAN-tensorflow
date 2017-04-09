@@ -8,6 +8,8 @@ import scipy.misc
 import numpy as np
 import matplotlib.pyplot as plt
 import ops
+import os
+import glob
 pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
@@ -206,3 +208,34 @@ def get_samples(sess,dcgan,folder):
     fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
     plt.show()
     plt.close(fig)
+
+def evaluate_training(folder):
+    os.chdir(folder)
+    real_data = np.load('autocorrelogramreal.npz')
+    real_acf = real_data['acf']
+    real_acf = real_acf/np.max(real_acf)
+    files = glob.glob("autocorrelogramtrain_*.npz")
+    error = np.empty((len(files),))
+    train_step = np.empty((len(files),))
+    for ind_f in range(len(files)):
+        #get epoch and step from name
+        name = files[ind_f]  
+        find_us = name.find('_')
+        find_us2 = name[find_us+1:].find('_')
+        find_dot = name.find('.')
+        
+        epoch = (name[find_us+1:find_us+find_us2+1])
+        step = name[find_us+find_us2+2:find_dot]
+        train_step[ind_f] = int(epoch+step)
+        training_data = np.load(name)
+        training_acf = training_data['acf']
+        training_acf = training_acf/np.max(training_acf)
+        error[ind_f] = np.sum(np.abs(real_acf-training_acf))
+        
+
+    indices = np.argsort(train_step)
+    error = np.array(error)[indices]
+    f = plt.figure()
+    plt.plot(error)
+    plt.show()
+    f.savefig('training_error.png',dpi=199, bbox_inches='tight')

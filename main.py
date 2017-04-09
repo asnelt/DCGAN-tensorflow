@@ -37,7 +37,7 @@ flags.DEFINE_integer("num_classes", 1, "Number of sample classes [3]")
 flags.DEFINE_string("classes_proportion", 'equal', "this will control the proportion of each class. It can be 'equal' or '7030'")
 flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000]")
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
-flags.DEFINE_integer("iteration", 0, "in case several instances are run with the same parameters")
+flags.DEFINE_string("iteration", "0", "in case several instances are run with the same parameters")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
 flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
 FLAGS = flags.FLAGS

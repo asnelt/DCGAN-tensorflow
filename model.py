@@ -222,13 +222,13 @@ class DCGAN(object):
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
               if ind_pl==0:
                   fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-          fig.savefig('./{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
+          fig.savefig('./{}/train_{:03d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
           plt.close(fig)
           
           
         if counter % 500 == 1:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
-          utils.get_samples_autocorrelogram(self.sess, self,'train_{:02d}_{:04d}'.format(epoch, idx), config.sample_dir)
+          utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config.sample_dir)
           
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
 

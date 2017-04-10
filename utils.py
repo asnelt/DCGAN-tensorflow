@@ -170,7 +170,9 @@ def spk_autocorrelogram(r, name,folder):
     f.savefig(folder + '/autocorrelogram' + name + '.png', bbox_inches='tight')
     plt.show()
     plt.close(f)
-    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index}
+    
+    profile_activity = np.mean(r,axis=0)
+    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity}
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
     
@@ -210,6 +212,7 @@ def get_samples(sess,dcgan,folder):
     plt.close(fig)
 
 def evaluate_training(folder):
+    mycwd = os.getcwd()
     os.chdir(folder)
     real_data = np.load('autocorrelogramreal.npz')
     real_acf = real_data['acf']
@@ -239,3 +242,4 @@ def evaluate_training(folder):
     plt.plot(error)
     plt.show()
     f.savefig('training_error.png',dpi=199, bbox_inches='tight')
+    os.chdir(mycwd)

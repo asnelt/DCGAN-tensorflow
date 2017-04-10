@@ -49,7 +49,7 @@ def main(_):
   
   FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
   '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_iteration_' + FLAGS.iteration
-  
+  print(FLAGS.checkpoint_dir)
   if not os.path.exists(FLAGS.checkpoint_dir):
     os.makedirs(FLAGS.checkpoint_dir)
   if not os.path.exists(FLAGS.sample_dir):

@@ -217,9 +217,18 @@ def evaluate_training(folder):
     real_data = np.load('autocorrelogramreal.npz')
     real_acf = real_data['acf']
     real_acf = real_acf/np.max(real_acf)
+    real_spkC_mean = real_data['mean']
+    real_spkC_std = real_data['std']
+    real_spkC_prf_act = real_data['prf_act']
+       
+    
     files = glob.glob("autocorrelogramtrain_*.npz")
-    error = np.empty((len(files),))
+    error_ac = np.empty((len(files),))
+    error_spkC_mean = np.empty((len(files),))
+    error_spkC_std = np.empty((len(files),))
+    error_spkC_prf_act = np.empty((len(files),))
     train_step = np.empty((len(files),))
+
     for ind_f in range(len(files)):
         #get epoch and step from name
         name = files[ind_f]  
@@ -231,15 +240,31 @@ def evaluate_training(folder):
         step = name[find_us+find_us2+2:find_dot]
         train_step[ind_f] = int(epoch+step)
         training_data = np.load(name)
+        #autocorrelogram
         training_acf = training_data['acf']
         training_acf = training_acf/np.max(training_acf)
-        error[ind_f] = np.sum(np.abs(real_acf-training_acf))
-        
+        error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))
+        #spikeCount mean
+        training_spkC_mean = training_data['mean']
+        error_spkC_mean[ind_f] = np.abs(real_spkC_mean-training_spkC_mean)
+        #spikeCount std
+        training_spkC_std = training_data['std']
+        error_spkC_std[ind_f] = np.abs(real_spkC_std-training_spkC_std)
+        #acticity profile
+        training_spkC_prf_act = training_data['prf_act']
+        error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
 
     indices = np.argsort(train_step)
-    error = np.array(error)[indices]
-    f = plt.figure()
-    plt.plot(error)
+    error_ac = np.array(error_ac)[indices]
+    f,sbplt = plt.subplots(2,2)  
+    sbplt[0][0].plot(error_ac)
+    sbplt[0][0].set_title('AC error')
+    sbplt[0][1].plot(error_spkC_mean)
+    sbplt[0][1].set_title('spk-count mean error')
+    sbplt[1][0].plot(error_spkC_std)
+    sbplt[1][0].set_title('spk-count std error')
+    sbplt[1][1].plot(error_spkC_prf_act)
+    sbplt[1][1].set_title('mean activity profile error')
     plt.show()
-    f.savefig('training_error.png',dpi=199, bbox_inches='tight')
+    f.savefig('training_error.png',dpi=300, bbox_inches='tight')
     os.chdir(mycwd)

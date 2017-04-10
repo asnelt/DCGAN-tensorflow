@@ -207,7 +207,7 @@ class DCGAN(object):
               .astype(np.float32)
         
         #every 500 batches, we get and save a sample (note that the inputs are always the same)
-        if counter==1 or (epoch==0 and idx<=100 and idx%50==0):
+        if idx==0 or (epoch==0 and idx<=100 and idx%50==0):
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
             feed_dict={
@@ -226,10 +226,10 @@ class DCGAN(object):
           plt.close(fig)
           
           
-        if counter==1:# and self.dataset_name!='calcium_transients':
+        if idx==0:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
           utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config.sample_dir)
-          
+          utils.evaluate_training(config.sample_dir)
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
 
         # Update D network

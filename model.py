@@ -229,9 +229,14 @@ class DCGAN(object):
         if idx==0:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
           utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config.sample_dir)
-          utils.evaluate_training(config.sample_dir)
+          f,sbplt = plt.subplots(2,2)
+          utils.evaluate_training(config.sample_dir,sbplt,0)
+          f.savefig(config.sample_dir+'/training_error.png',dpi=300, bbox_inches='tight')
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
-
+          print(config.sample_dir)
+            
+    
+          
         # Update D network
         _, summary_str = self.sess.run([d_optim, self.d_sum],
           feed_dict={ 

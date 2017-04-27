@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from model import DCGAN
-from utils import pp, get_samples_autocorrelogram, get_samples, evaluate_training
+from utils import pp, get_samples_autocorrelogram, get_samples, compare_trainings
 from dataprovider import DataProvider
 
 import tensorflow as tf
@@ -92,7 +92,7 @@ def main(_):
     # Below is codes for visualization
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
     get_samples(sess, dcgan,FLAGS.sample_dir)
-    evaluate_training(FLAGS.sample_dir)
+    compare_trainings(FLAGS.sample_dir,'training errors')
 
 if __name__ == '__main__':
   tf.app.run()

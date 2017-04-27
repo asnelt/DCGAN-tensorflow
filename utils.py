@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import ops
 import os
 import glob
+import matplotlib
+#from matplotlib.backends.backend_pdf import PdfPages
 pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
@@ -211,7 +213,7 @@ def get_samples(sess,dcgan,folder):
     plt.show()
     plt.close(fig)
 
-def evaluate_training(folder):
+def evaluate_training(folder,sbplt,ind):
     mycwd = os.getcwd()
     os.chdir(folder)
     real_data = np.load('autocorrelogramreal.npz')
@@ -256,15 +258,45 @@ def evaluate_training(folder):
 
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
-    f,sbplt = plt.subplots(2,2)  
-    sbplt[0][0].plot(error_ac)
+      
+    sbplt[0][0].plot(error_ac,label=str(ind))
     sbplt[0][0].set_title('AC error')
+    sbplt[0][0].set_xlabel('epoch')
+    sbplt[0][0].set_ylabel('L1 distance')
     sbplt[0][1].plot(error_spkC_mean)
     sbplt[0][1].set_title('spk-count mean error')
+    sbplt[0][1].set_xlabel('epoch')
+    sbplt[0][1].set_ylabel('absolute difference')
     sbplt[1][0].plot(error_spkC_std)
     sbplt[1][0].set_title('spk-count std error')
-    sbplt[1][1].plot(error_spkC_prf_act)
+    sbplt[1][0].set_xlabel('epoch')
+    sbplt[1][0].set_ylabel('absolute difference')
+    sbplt[1][1].plot(error_spkC_prf_act,label=str(ind))
     sbplt[1][1].set_title('mean activity profile error')
-    plt.show()
-    f.savefig('training_error.png',dpi=300, bbox_inches='tight')
+    sbplt[1][1].set_xlabel('epoch')
+    sbplt[1][1].set_ylabel('L1 distance')
     os.chdir(mycwd)
+    
+def compare_trainings(folder,title):
+    #pp = PdfPages(folder+'/training_error.png')
+    find_aux = folder.find('iteration')
+    files = glob.glob(folder[0:find_aux]+'*')
+    f,sbplt = plt.subplots(2,2,figsize=(8, 8),dpi=250)
+    
+    left  = 0.125  # the left side of the subplots of the figure
+    right = 0.9    # the right side of the subplots of the figure
+    bottom = 0.1   # the bottom of the subplots of the figure
+    top = 0.9      # the top of the subplots of the figure
+    wspace = 0.4   # the amount of width reserved for blank space between subplots
+    hspace = 0.4   # the amount of height reserved for white space between subplots
+
+    matplotlib.rcParams.update({'font.size': 8})
+    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    for ind_f in range(len(files)):
+        evaluate_training(files[ind_f],sbplt,ind_f)
+    plt.legend(shadow=True, fancybox=True)
+    plt.suptitle(title)
+    plt.show()
+    
+    f.savefig(folder+'/training_error.png',dpi=300, bbox_inches='tight')
+    f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')

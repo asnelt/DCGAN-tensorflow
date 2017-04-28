@@ -11,7 +11,7 @@ import ops
 import os
 import glob
 import matplotlib
-#from matplotlib.backends.backend_pdf import PdfPages
+
 pp = pprint.PrettyPrinter()
 
 get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
@@ -255,9 +255,13 @@ def evaluate_training(folder,sbplt,ind):
         #acticity profile
         training_spkC_prf_act = training_data['prf_act']
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
-
+       
+    
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
+    error_spkC_mean = np.array(error_spkC_mean)[indices]
+    error_spkC_std = np.array(error_spkC_std)[indices]
+    error_spkC_prf_act = np.array(error_spkC_prf_act)[indices]
       
     sbplt[0][0].plot(error_ac,label=str(ind))
     sbplt[0][0].set_title('AC error')
@@ -278,7 +282,7 @@ def evaluate_training(folder,sbplt,ind):
     os.chdir(mycwd)
     
 def compare_trainings(folder,title):
-    #pp = PdfPages(folder+'/training_error.png')
+    
     find_aux = folder.find('iteration')
     files = glob.glob(folder[0:find_aux]+'*')
     f,sbplt = plt.subplots(2,2,figsize=(8, 8),dpi=250)
@@ -300,3 +304,4 @@ def compare_trainings(folder,title):
     
     f.savefig(folder+'/training_error.png',dpi=300, bbox_inches='tight')
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
+    plt.close()

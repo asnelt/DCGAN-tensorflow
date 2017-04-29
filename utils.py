@@ -152,9 +152,10 @@ def make_gif(images, fname, duration=2, true_image=False):
 
 def spk_autocorrelogram(r, name,folder):
     print('plot autocorrelogram')
-    #first we get the average and std of the spike-count 
+    #first we get the average, std of the spike-count and the average time course
     mean_spk_count = np.mean(np.sum(r,axis=1))
     std_spk_count = np.std(np.sum(r,axis=1))
+    profile_activity = np.mean(r,axis=0)
     lag = 10
     margin = np.zeros((r.shape[0],lag))
     r = np.hstack((margin,np.hstack((r,margin))))
@@ -173,7 +174,7 @@ def spk_autocorrelogram(r, name,folder):
     plt.show()
     plt.close(f)
     
-    profile_activity = np.mean(r,axis=0)
+    
     data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity}
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
@@ -222,15 +223,22 @@ def evaluate_training(folder,sbplt,ind):
     real_spkC_mean = real_data['mean']
     real_spkC_std = real_data['std']
     real_spkC_prf_act = real_data['prf_act']
+    best_ac_fit = {}
+    best_ac_fit['acf'] = real_acf
+    best_ac_fit['mean'] = real_data['mean']
+    best_ac_fit['std'] = real_data['std']
+    best_ac_fit['prf_act'] = real_data['prf_act']  
+    best_prf_act_fit = best_ac_fit.copy()
+   
        
-    
     files = glob.glob("autocorrelogramtrain_*.npz")
     error_ac = np.empty((len(files),))
     error_spkC_mean = np.empty((len(files),))
     error_spkC_std = np.empty((len(files),))
     error_spkC_prf_act = np.empty((len(files),))
     train_step = np.empty((len(files),))
-
+    min_error_ac = 1000000
+    min_error_prf_act = 1000000
     for ind_f in range(len(files)):
         #get epoch and step from name
         name = files[ind_f]  
@@ -256,6 +264,27 @@ def evaluate_training(folder,sbplt,ind):
         training_spkC_prf_act = training_data['prf_act']
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
        
+        if min_error_ac>error_ac[ind_f]:
+            min_error_ac = error_ac[ind_f]
+            best_ac_fit['acf_fake'] = training_acf
+            best_ac_fit['mean_fake'] = training_data['mean']
+            best_ac_fit['std_fake'] = training_data['std']
+            best_ac_fit['prf_act_fake'] = training_data['prf_act']
+        if min_error_prf_act>error_spkC_prf_act[ind_f]:
+            min_error_prf_act = error_spkC_prf_act[ind_f]
+            best_prf_act_fit['acf_fake'] = training_acf
+            best_prf_act_fit['mean_fake'] = training_data['mean']
+            best_prf_act_fit['std_fake'] = training_data['std']
+            best_prf_act_fit['prf_act_fake'] = training_data['prf_act']
+            
+            
+    
+    
+    
+    #plot best fits
+    plot_best_fit(folder,best_ac_fit,'best_ac_fit')
+    plot_best_fit(folder,best_prf_act_fit,'best_prf_act_fit')
+    
     
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
@@ -285,6 +314,7 @@ def compare_trainings(folder,title):
     
     find_aux = folder.find('iteration')
     files = glob.glob(folder[0:find_aux]+'*')
+    #figure for training error across epochs
     f,sbplt = plt.subplots(2,2,figsize=(8, 8),dpi=250)
     
     left  = 0.125  # the left side of the subplots of the figure
@@ -305,3 +335,79 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.png',dpi=300, bbox_inches='tight')
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
+    
+def plot_best_fit(folder,data,name):
+    lag = 10
+    left  = 0.125  # the left side of the subplots of the figure
+    right = 0.9    # the right side of the subplots of the figure
+    bottom = 0.1   # the bottom of the subplots of the figure
+    top = 0.9      # the top of the subplots of the figure
+    wspace = 0.4   # the amount of width reserved for blank space between subplots
+    hspace = 0.4   # the amount of height reserved for white space between subplots
+    f,sbplt2 = plt.subplots(1,2,figsize=(8, 8),dpi=250)
+    matplotlib.rcParams.update({'font.size': 8})
+    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    sbplt2[0].plot(data['acf'],label='real')
+    sbplt2[0].plot(data['acf_fake'],'--',label='fake')
+    sbplt2[0].set_title('AC function')
+    sbplt2[0].set_xlabel('time')
+    sbplt2[0].set_ylabel('proportion of spikes')
+    sbplt2[1].plot(data['prf_act'][lag:-lag],label='real')
+    sbplt2[1].plot(data['prf_act_fake'][lag:-lag],label='fake')
+    sbplt2[1].set_title('time course average')
+    sbplt2[1].set_xlabel('time')
+    sbplt2[1].set_ylabel('average firing rate')
+    plt.suptitle('best ac fit')
+    plt.legend(shadow=True, fancybox=True)
+    plt.show()
+    f.savefig(folder+'/' + name + '.png',dpi=300, bbox_inches='tight')
+    f.savefig(folder+'/' + name + '.svg',dpi=300, bbox_inches='tight') 
+    plt.close()
+    np.savez(folder + '/' + name + '.npz', **data)
+    
+    
+def probability_data(parameters,data):
+    num_classes = parameters.num_classes
+    num_samples = int(np.shape(data)[0])
+    num_bins = parameters.num_bins
+    firing_rate = 0.1
+    if parameters.dataset=='gaussian_fr':
+        #noise = 0.01*firing_rate IGNORE NOISE
+        margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
+        std_resp = 4 #std of the gaussian defining the firing rates
+        if parameters.classes_proportion=='equal':
+            mat_prop_classes = np.ones((num_classes,))/num_classes
+        elif parameters.classes_proportion=='7030':    
+            mat_prop_classes = [0.7,0.3]
+        else:
+            raise ValueError("Unknown dataset '" + parameters.classes_proportion + "'")
+             
+            
+        t = np.arange(num_bins)
+        
+        peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,num_classes)
+        X =np.zeros((num_samples,num_bins,1))
+        y =np.zeros((num_samples,num_classes))
+        
+        counter = np.zeros((1,num_classes))
+        for ind in range(num_samples):
+            stim = np.random.choice(num_classes,p=mat_prop_classes)
+            fr = firing_rate*np.exp(-(t-peaks1[stim])**2/std_resp**2)
+            fr[fr<0] = 0
+            r = fr > np.random.random(fr.shape)
+            r = r.astype(float)
+            r[r>0] = 1
+                
+            X[ind,:,0] = r
+            y[ind,stim] = 1
+            counter[0,stim] += 1
+            
+    elif parameters.dataset=='uniform_fr':
+        X = (np.zeros((num_samples,num_bins,1)) + firing_rate) > np.random.random((num_samples,num_bins,1))
+        X = X.astype(float)
+        X[X>0] = 1
+        y = np.ones((num_samples, 1))
+        counter = np.zeros((1,num_classes))
+        counter[0] = num_samples   
+        
+        

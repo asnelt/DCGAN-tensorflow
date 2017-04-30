@@ -104,7 +104,7 @@ def generate_spike_trains(parameters):
     aux = np.mean(X[:,:,0],axis=0)
     plt.plot(aux)
     f.savefig(parameters.sample_dir + '/average_activity_real_before_refrPeriod.png', bbox_inches='tight')
-    plt.show()
+    #plt.show()
     plt.close(f)
     
     if parameters.dataset!='calcium_transients':
@@ -113,7 +113,7 @@ def generate_spike_trains(parameters):
             X = refractory_period_control(refr_per,X,firing_rate)  
         X_reduced = X[:,:,0]   
         #get autocorrelogram
-        spk_autocorrelogram(X_reduced,'real', parameters.sample_dir)
+        spk_autocorrelogram(X_reduced,'real', parameters)
         
         if parameters.visualize_data:
             if num_classes>1:
@@ -145,7 +145,7 @@ def generate_spike_trains(parameters):
                 counter[0,np.nonzero(stim)[0]] += 1
             
             
-            plt.show()
+            #plt.show()
 
             fig.savefig(parameters.sample_dir + '/real_samples.png',dpi=199, bbox_inches='tight')
             plt.close(fig)
@@ -153,7 +153,7 @@ def generate_spike_trains(parameters):
             f,sbplt = plt.subplots(1,2)
             sbplt[0].plot(counter[0])
             sbplt[1].imshow(y[1:100,:])
-            plt.show()
+            #plt.show()
     
             f.savefig(parameters.sample_dir + '/stim_tags.png', bbox_inches='tight')
             plt.close(f)
@@ -167,7 +167,7 @@ def generate_spike_trains(parameters):
     aux = np.mean(X_reduced,axis=0)
     plt.plot(aux)
     f.savefig(parameters.sample_dir + '/average_activity_real.png', bbox_inches='tight')
-    plt.show()
+    #plt.show()
     plt.close(f)
     
     X = X-np.min(X)

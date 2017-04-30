@@ -116,33 +116,15 @@ def generate_spike_trains(parameters):
         spk_autocorrelogram(X_reduced,'real', parameters)
         
         if parameters.visualize_data:
-            if num_classes>1:
-                fig,sbplt = plt.subplots(1,num_classes)
-            else:
-                fig = plt.figure()
-            counter = np.zeros((1,num_classes))
-            samples = np.zeros((num_classes,1000,num_bins))
-            for ind_samples in range(np.shape(X)[0]):  
-                sample = X_reduced[ind_samples,:]
-                stim = y[ind_samples,:]
+            samples_plot = X_reduced[0:64,:]
+            y_plot = y[0:64,:]
+            fig,sbplt = plt.subplots(8,8)
+            colors = 'rbg'
+            for ind_pl in range(np.shape(samples_plot)[0]):
+                class_plot = np.nonzero(y_plot[int(ind_pl),:])[0][0]
+                sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:],colors[class_plot])
+                sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
                 
-                if counter[0,np.nonzero(stim)[0]]<1000:
-                    samples[np.nonzero(stim)[0],int(counter[0,np.nonzero(stim)[0]]),:] = sample
-                    if num_classes>1:
-                        sbplt[np.nonzero(stim)[0]][0].plot(sample)
-                        #sbplt[np.nonzero(stim)[0]].axis('off')
-                    else:
-                        plt.plot(sample)
-                        #plt.axis('off')
-                    if counter[0,np.nonzero(stim)[0]]==999:
-                        samples_mean = np.mean(samples[np.nonzero(stim)[0],:,:],axis=1)
-                        if num_classes>1:
-                            sbplt[np.nonzero(stim)[0]][0].plot(samples_mean[0],'k')
-                        else:
-                            plt.plot(samples_mean[0],'k' )
-                        
-                        
-                counter[0,np.nonzero(stim)[0]] += 1
             
             
             #plt.show()

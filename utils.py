@@ -160,7 +160,8 @@ def spk_autocorrelogram(r, name,parameters):
     
     #get mean probability
     num_samples = 1000
-    mean_prob = probability_data(parameters,r[0:num_samples,:])
+    samples = r[0:num_samples,:]
+    mean_prob = probability_data(parameters,samples)
     
     #get autocorrelogram
     lag = 10
@@ -182,7 +183,7 @@ def spk_autocorrelogram(r, name,parameters):
     #plt.show()
     plt.close(f)
     
-    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'mean_prb_samples':mean_prob}
+    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'mean_prb_samples':mean_prob}
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
     
@@ -211,17 +212,17 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters):
     #plt.show()
     plt.close(f)
       
-#def get_samples(sess,dcgan,folder):    
-#    z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
-#    samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-#    samples_plot = ops.binarize(samples_plot)
-#    fig,sbplt = plt.subplots(8,8)
-#    for ind_pl in range(np.shape(samples_plot)[0]):
-#        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
-#        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
-#    fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
-#    #plt.show()
-#    plt.close(fig)
+def get_samples(sess,dcgan,folder):    
+    z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+    samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+    samples_plot = ops.binarize(samples_plot)
+    fig,sbplt = plt.subplots(8,8)
+    for ind_pl in range(np.shape(samples_plot)[0]):
+        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
+        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
+    fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
+    #plt.show()
+    plt.close(fig)
 
 def evaluate_training(folder,sbplt,ind):
     mycwd = os.getcwd()
@@ -244,10 +245,10 @@ def evaluate_training(folder,sbplt,ind):
        
     files = glob.glob("autocorrelogramtrain_*.npz")
     error_ac = np.empty((len(files),))
-    error_spkC_mean = np.empty((len(files),))
-    error_spkC_std = np.empty((len(files),))
+    spkC_mean = np.empty((len(files),))
+    spkC_std = np.empty((len(files),))
     error_spkC_prf_act = np.empty((len(files),))
-    error_mean_prob_samples = np.empty((len(files),))
+    mean_prob_samples = np.empty((len(files),))
     train_step = np.empty((len(files),))
     min_error_ac = 1000000
     min_error_mean_prob = 1000000
@@ -267,18 +268,17 @@ def evaluate_training(folder,sbplt,ind):
         training_acf = training_acf/np.max(training_acf)
         error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))
         #spikeCount mean
-        training_spkC_mean = training_data['mean']
-        error_spkC_mean[ind_f] = np.abs(real_spkC_mean-training_spkC_mean)
+        spkC_mean[ind_f] = training_data['mean']
         #spikeCount std
-        training_spkC_std = training_data['std']
-        error_spkC_std[ind_f] = np.abs(real_spkC_std-training_spkC_std)
+        spkC_std[ind_f] = training_data['std']
+         
         #acticity profile
         training_spkC_prf_act = training_data['prf_act']
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         
         #mean probability of samples
-        training_mean_prb_samples = training_data['mean_prb_samples']
-        error_mean_prob_samples[ind_f] = np.sum(np.abs(real_mean_prob_samples-training_mean_prb_samples))
+        mean_prob_samples[ind_f] = training_data['mean_prb_samples']
+        
         
        
         if min_error_ac>error_ac[ind_f]:
@@ -288,8 +288,8 @@ def evaluate_training(folder,sbplt,ind):
             best_ac_fit['std_fake'] = training_data['std']
             best_ac_fit['prf_act_fake'] = training_data['prf_act']
             best_ac_fit['mean_prb_samples_fake'] = training_data['mean_prb_samples']
-        if min_error_mean_prob>error_mean_prob_samples[ind_f]:
-            min_error_mean_prob = error_mean_prob_samples[ind_f]
+        if min_error_mean_prob>mean_prob_samples[ind_f]:
+            min_error_mean_prob = mean_prob_samples[ind_f]
             best_mean_prob_fit['acf_fake'] = training_acf
             best_mean_prob_fit['mean_fake'] = training_data['mean']
             best_mean_prob_fit['std_fake'] = training_data['std']
@@ -297,30 +297,34 @@ def evaluate_training(folder,sbplt,ind):
             best_ac_fit['mean_prb_samples_fake'] = training_data['mean_prb_samples']
             
     #plot best fits
-    plot_best_fit(folder,best_ac_fit,'best_ac_fit')
-    plot_best_fit(folder,best_mean_prob_fit,'best_mean_prob_fit')
+    plot_best_fit(best_ac_fit,'best_ac_fit')
+    plot_best_fit(best_mean_prob_fit,'best_mean_prob_fit')
     
     
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
-    error_spkC_mean = np.array(error_spkC_mean)[indices]
-    error_spkC_std = np.array(error_spkC_std)[indices]
+    spkC_mean = np.array(spkC_mean)[indices]
+    spkC_std = np.array(spkC_std)[indices]
     error_spkC_prf_act = np.array(error_spkC_prf_act)[indices]
-    error_mean_prob_samples = np.array(error_mean_prob_samples)[indices]
+    mean_prob_samples = np.array(mean_prob_samples)[indices]
       
+  
     sbplt[0][0].plot(error_ac)
     sbplt[0][0].set_title('AC error')
     sbplt[0][0].set_xlabel('epoch')
     sbplt[0][0].set_ylabel('L1 distance')
-    sbplt[0][1].plot(error_spkC_mean)
+    sbplt[0][1].plot(spkC_mean)
+    sbplt[0][1].plot(np.ones(len(files),)*real_spkC_mean)
     sbplt[0][1].set_title('spk-count mean error')
     sbplt[0][1].set_xlabel('epoch')
     sbplt[0][1].set_ylabel('absolute difference')
-    sbplt[1][0].plot(error_spkC_std)
+    sbplt[1][0].plot(spkC_std)
+    sbplt[1][0].plot(np.ones(len(files),)*real_spkC_std)
     sbplt[1][0].set_title('spk-count std error')
     sbplt[1][0].set_xlabel('epoch')
     sbplt[1][0].set_ylabel('absolute difference')
-    sbplt[1][1].plot(error_mean_prob_samples,label=str(ind))
+    sbplt[1][1].plot(mean_prob_samples,label=str(ind))
+    sbplt[1][1].plot(np.ones(len(files),)*real_mean_prob_samples)
     sbplt[1][1].set_title('samples mean probability error')
     sbplt[1][1].set_xlabel('epoch')
     sbplt[1][1].set_ylabel('absolute difference')
@@ -352,7 +356,7 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
     
-def plot_best_fit(folder,data,name):
+def plot_best_fit(data,name):
     lag = 10
     left  = 0.125  # the left side of the subplots of the figure
     right = 0.9    # the right side of the subplots of the figure
@@ -376,10 +380,10 @@ def plot_best_fit(folder,data,name):
     plt.suptitle('best ac fit')
     plt.legend(shadow=True, fancybox=True)
     plt.show()
-    f.savefig(folder+'/' + name + '.png',dpi=300, bbox_inches='tight')
-    f.savefig(folder+'/' + name + '.svg',dpi=300, bbox_inches='tight') 
+    f.savefig(name + '.png',dpi=300, bbox_inches='tight')
+    f.savefig(name + '.svg',dpi=300, bbox_inches='tight') 
     plt.close()
-    np.savez(folder + '/' + name + '.npz', **data)
+    np.savez(name + '.npz', **data)
     
     
 def probability_data(parameters,data):

@@ -1,4 +1,4 @@
-from utils import spk_autocorrelogram
+from utils import samples_statistics
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -113,7 +113,7 @@ def generate_spike_trains(parameters):
             X = refractory_period_control(refr_per,X,firing_rate)  
         X_reduced = X[:,:,0]   
         #get autocorrelogram
-        spk_autocorrelogram(X_reduced,'real', parameters)
+        samples_statistics(X_reduced,'real', parameters)
         
         if parameters.visualize_data:
             samples_plot = X_reduced[0:64,:]

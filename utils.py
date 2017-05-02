@@ -150,7 +150,7 @@ def make_gif(images, fname, duration=2, true_image=False):
   clip = mpy.VideoClip(make_frame, duration=duration)
   clip.write_gif(fname, fps = len(images) / duration)
 
-def spk_autocorrelogram(r, name,parameters):
+def samples_statistics(r, name, parameters):
     folder = parameters.sample_dir
     print('plot autocorrelogram')
     #first we get the average, std of the spike-count and the average time course
@@ -158,11 +158,28 @@ def spk_autocorrelogram(r, name,parameters):
     std_spk_count = np.std(np.sum(r,axis=1))
     profile_activity = np.mean(r,axis=0)
     
-    #get mean probability
-    num_samples = 1000
-    samples = r[0:num_samples,:]
-    mean_prob = probability_data(parameters,samples)
+    #get samples probability
     
+    if name=='real':
+        r_unique = np.vstack({tuple(row) for row in r})
+        num_samples = 200
+        samples = r_unique[0:num_samples,:]
+        numerical_prob = np.zeros((num_samples,))
+        for ind_s in range(num_samples):
+            sample = samples[ind_s,:]
+            sample_mat = np.tile(sample,(np.shape(r)[0] ,1))
+            compare_mat = np.sum(np.abs(r-sample_mat),axis=1)
+            numerical_prob[ind_s] = np.count_nonzero(compare_mat==0)/np.shape(r)[0]  
+    else:
+        real_data = np.load(folder + '/autocorrelogramreal.npz')
+        samples = real_data['samples']
+        numerical_prob = np.zeros((np.shape(samples)[0],))
+        for ind_s in range(np.shape(samples)[0]):
+            sample = samples[ind_s,:]
+            sample_mat = np.tile(sample,(np.shape(r)[0],1))
+            compare_mat = np.sum(np.abs(r-sample_mat),axis=1)
+            numerical_prob[ind_s] = np.count_nonzero(compare_mat==0)/np.shape(r)[0]  
+            
     #get autocorrelogram
     lag = 10
     margin = np.zeros((r.shape[0],lag))
@@ -182,8 +199,11 @@ def spk_autocorrelogram(r, name,parameters):
     f.savefig(folder + '/autocorrelogram' + name + '.png', bbox_inches='tight')
     #plt.show()
     plt.close(f)
+    if name=='real':
+        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'prb_samples':numerical_prob}
+    else:
+        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'prb_samples':numerical_prob}
     
-    data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'mean_prb_samples':mean_prob}
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
     
@@ -200,13 +220,13 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters):
     binarized_X = ops.binarize(X)
     binarized_X_reduced = binarized_X[:,:,0]
     
-    #compute autocorrelogram
-    spk_autocorrelogram(binarized_X_reduced,name,parameters)  
+    #compute statistics
+    samples_statistics(binarized_X_reduced,name,parameters)  
     
     
     #compute average activity
     f = plt.figure()
-    aux = np.mean(X[:,:,0],axis=0)
+    aux = np.mean(binarized_X_reduced,axis=0)
     plt.plot(aux)
     f.savefig(folder + '/average_activity' + name + '.png', bbox_inches='tight')
     #plt.show()
@@ -233,13 +253,13 @@ def evaluate_training(folder,sbplt,ind):
     real_spkC_mean = real_data['mean']
     real_spkC_std = real_data['std']
     real_spkC_prf_act = real_data['prf_act']
-    real_mean_prob_samples = real_data['mean_prb_samples']
+    real_probs_samples = real_data['prb_samples']
     best_ac_fit = {}
     best_ac_fit['acf'] = real_acf
     best_ac_fit['mean'] = real_data['mean']
     best_ac_fit['std'] = real_data['std']
     best_ac_fit['prf_act'] = real_data['prf_act']  
-    best_ac_fit['mean_prb_samples'] = real_data['mean_prb_samples']  
+    best_ac_fit['prb_samples'] = real_data['prb_samples']  
     best_mean_prob_fit = best_ac_fit.copy()
    
        
@@ -248,7 +268,7 @@ def evaluate_training(folder,sbplt,ind):
     spkC_mean = np.empty((len(files),))
     spkC_std = np.empty((len(files),))
     error_spkC_prf_act = np.empty((len(files),))
-    mean_prob_samples = np.empty((len(files),))
+    error_probs_samples = np.empty((len(files),))
     train_step = np.empty((len(files),))
     min_error_ac = 1000000
     min_error_mean_prob = 1000000
@@ -277,7 +297,7 @@ def evaluate_training(folder,sbplt,ind):
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         
         #mean probability of samples
-        mean_prob_samples[ind_f] = training_data['mean_prb_samples']
+        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples']))
         
         
        
@@ -287,14 +307,14 @@ def evaluate_training(folder,sbplt,ind):
             best_ac_fit['mean_fake'] = training_data['mean']
             best_ac_fit['std_fake'] = training_data['std']
             best_ac_fit['prf_act_fake'] = training_data['prf_act']
-            best_ac_fit['mean_prb_samples_fake'] = training_data['mean_prb_samples']
-        if min_error_mean_prob>mean_prob_samples[ind_f]:
-            min_error_mean_prob = mean_prob_samples[ind_f]
+            best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
+        if min_error_mean_prob>error_probs_samples[ind_f]:
+            min_error_mean_prob = error_probs_samples[ind_f]
             best_mean_prob_fit['acf_fake'] = training_acf
             best_mean_prob_fit['mean_fake'] = training_data['mean']
             best_mean_prob_fit['std_fake'] = training_data['std']
             best_mean_prob_fit['prf_act_fake'] = training_data['prf_act']
-            best_ac_fit['mean_prb_samples_fake'] = training_data['mean_prb_samples']
+            best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
             
     #plot best fits
     plot_best_fit(best_ac_fit,'best_ac_fit')
@@ -306,7 +326,7 @@ def evaluate_training(folder,sbplt,ind):
     spkC_mean = np.array(spkC_mean)[indices]
     spkC_std = np.array(spkC_std)[indices]
     error_spkC_prf_act = np.array(error_spkC_prf_act)[indices]
-    mean_prob_samples = np.array(mean_prob_samples)[indices]
+    error_probs_samples = np.array(error_probs_samples)[indices]
       
   
     sbplt[0][0].plot(error_ac)
@@ -323,8 +343,7 @@ def evaluate_training(folder,sbplt,ind):
     sbplt[1][0].set_title('spk-count std error')
     sbplt[1][0].set_xlabel('epoch')
     sbplt[1][0].set_ylabel('absolute difference')
-    sbplt[1][1].plot(mean_prob_samples,label=str(ind))
-    sbplt[1][1].plot(np.ones(len(files),)*real_mean_prob_samples)
+    sbplt[1][1].plot(error_probs_samples,label=str(ind))
     sbplt[1][1].set_title('samples mean probability error')
     sbplt[1][1].set_xlabel('epoch')
     sbplt[1][1].set_ylabel('absolute difference')
@@ -357,7 +376,6 @@ def compare_trainings(folder,title):
     plt.close()
     
 def plot_best_fit(data,name):
-    lag = 10
     left  = 0.125  # the left side of the subplots of the figure
     right = 0.9    # the right side of the subplots of the figure
     bottom = 0.1   # the bottom of the subplots of the figure
@@ -372,8 +390,8 @@ def plot_best_fit(data,name):
     sbplt2[0].set_title('AC function')
     sbplt2[0].set_xlabel('time')
     sbplt2[0].set_ylabel('proportion of spikes')
-    sbplt2[1].plot(data['prf_act'][lag:-lag],label='real')
-    sbplt2[1].plot(data['prf_act_fake'][lag:-lag],label='fake')
+    sbplt2[1].plot(data['prf_act'],label='real')
+    sbplt2[1].plot(data['prf_act_fake'],label='fake')
     sbplt2[1].set_title('time course average')
     sbplt2[1].set_xlabel('time')
     sbplt2[1].set_ylabel('average firing rate')
@@ -416,7 +434,7 @@ def probability_data(parameters,data):
             prob_noSpk_bins = np.prod(1-fr_noSpk,axis=1)
             fr_Spk[data==0] = 1
             prob_Spk_bins = np.prod(fr_Spk,axis=1)
-            probs_mat[ind] = np.mean(prob_noSpk_bins*prob_Spk_bins)
+            probs_mat[ind] = prob_noSpk_bins*prob_Spk_bins
             
         probData = np.sum(mat_prop_classes*probs_mat)
           
@@ -428,7 +446,7 @@ def probability_data(parameters,data):
         prob_noSpk_bins = np.prod(1-fr_noSpk,axis=1)
         fr_Spk[data==0] = 1
         prob_Spk_bins = np.prod(fr_Spk,axis=1)
-        probData = np.mean(prob_noSpk_bins*prob_Spk_bins)
+        probData = prob_noSpk_bins*prob_Spk_bins
         
     return(probData)    
         

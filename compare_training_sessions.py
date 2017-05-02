@@ -23,8 +23,7 @@ dataset = 'uniform_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = -1
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
@@ -41,8 +40,7 @@ dataset = 'uniform_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = 2
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -61,8 +59,7 @@ dataset = 'gaussian_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = -1
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -79,8 +76,7 @@ dataset = 'gaussian_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = 2
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -98,8 +94,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = 'equal' 
 ref_period = -1
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -117,8 +112,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = 'equal' 
 ref_period = 2
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -136,8 +130,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = '7030' 
 ref_period = -1
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   
@@ -153,8 +146,7 @@ plt.close()
 num_classes = 2
 classes_proportion = '7030' 
 ref_period = 2
-epoch = 200  
-num_samples = 50000
+num_samples = 32768
 folder = 'samples_dataset_' + dataset + '_num_classes_' + str(num_classes) + '_propClasses_' + classes_proportion + \
   '_num_samples_' + str(num_samples) + '_num_bins_' + str(num_bins) + '_ref_period_' + str(ref_period) + '_iteration_0'
   

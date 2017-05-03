@@ -162,7 +162,7 @@ def samples_statistics(r, name, parameters):
     
     if name=='real':
         r_unique = np.vstack({tuple(row) for row in r})
-        num_samples = 200
+        num_samples = np.shape(r_unique)[0]#200
         samples = r_unique[0:num_samples,:]
         numerical_prob = np.zeros((num_samples,))
         for ind_s in range(num_samples):
@@ -270,6 +270,7 @@ def evaluate_training(folder,sbplt,ind):
     error_spkC_prf_act = np.empty((len(files),))
     error_probs_samples = np.empty((len(files),))
     train_step = np.empty((len(files),))
+    training_probs_mat = np.empty((len(files),len(real_probs_samples)))
     min_error_ac = 1000000
     min_error_mean_prob = 1000000
     for ind_f in range(len(files)):
@@ -297,7 +298,15 @@ def evaluate_training(folder,sbplt,ind):
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         
         #mean probability of samples
-        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples']))
+        training_probs_mat[ind_f,:] = np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples#training_data['prb_samples']#/real_probs_samples#
+        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples)/len(real_probs_samples)
+#        plt.figure()
+#        plt.plot(real_probs_samples,label='real')
+#        plt.plot(training_data['prb_samples'],label='fake')
+#        plt.legend(shadow=True, fancybox=True)
+#        plt.show(block=True)
+#        
+#        plt.close()
         
         
        
@@ -315,7 +324,8 @@ def evaluate_training(folder,sbplt,ind):
             best_mean_prob_fit['std_fake'] = training_data['std']
             best_mean_prob_fit['prf_act_fake'] = training_data['prf_act']
             best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
-            
+      
+    
     #plot best fits
     plot_best_fit(best_ac_fit,'best_ac_fit')
     plot_best_fit(best_mean_prob_fit,'best_mean_prob_fit')
@@ -327,7 +337,27 @@ def evaluate_training(folder,sbplt,ind):
     spkC_std = np.array(spkC_std)[indices]
     error_spkC_prf_act = np.array(error_spkC_prf_act)[indices]
     error_probs_samples = np.array(error_probs_samples)[indices]
-      
+    training_probs_mat  = np.array(training_probs_mat)[indices]
+    
+#    maximo = np.max(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
+#    minimo = np.min(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
+#    np.shape(training_probs_mat)
+#    plt.ion()
+#    plt.figure()
+#    plt.subplot(2,1,1)
+#    plt.imshow(training_probs_mat,vmin=minimo,vmax=maximo)
+#    plt.title(str(np.shape(training_probs_mat)))
+#    plt.colorbar()
+#    plt.subplot(2,1,2)
+#    mat_aux = np.tile(real_probs_samples,(50,1))
+#    plt.imshow(mat_aux,vmin=minimo,vmax=maximo)
+#    plt.title(str(np.shape(mat_aux)))
+#    plt.colorbar()
+#    plt.show()
+#    
+#    plt.pause(0.05)
+#    asdasdass
+    
   
     sbplt[0][0].plot(error_ac)
     sbplt[0][0].set_title('AC error')

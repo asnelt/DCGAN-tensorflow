@@ -158,7 +158,7 @@ class DCGAN(object):
     self.g_vars = [var for var in t_vars if 'g_' in var.name]
 
     #save training
-    self.saver = tf.train.Saver()
+    self.saver = tf.train.Saver(max_to_keep=1000)
 
   def train(self, data, config):
     """Train DCGAN"""
@@ -216,6 +216,7 @@ class DCGAN(object):
             }
           )
           samples_plot = samples[:,:,0]
+          samples_plot = ops.binarize(samples_plot)
           fig,sbplt = plt.subplots(8,8)
           for ind_pl in range(np.shape(samples_plot)[0]):
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
@@ -226,15 +227,26 @@ class DCGAN(object):
           plt.close(fig)
           
           
-        if idx==0:# and self.dataset_name!='calcium_transients':
+        if np.mod(counter, config.training_step)==0:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
           utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config)
-          f,sbplt = plt.subplots(2,2)
+          f,sbplt = plt.subplots(2,2,figsize=(8, 8),dpi=250)
+    
+          left  = 0.125  # the left side of the subplots of the figure
+          right = 0.9    # the right side of the subplots of the figure
+          bottom = 0.1   # the bottom of the subplots of the figure
+          top = 0.9      # the top of the subplots of the figure
+          wspace = 0.4   # the amount of width reserved for blank space between subplots
+          hspace = 0.4   # the amount of height reserved for white space between subplots
+          
+          matplotlib.rcParams.update({'font.size': 8})
+          plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
           utils.evaluate_training(config.sample_dir,sbplt,0)
           f.savefig(config.sample_dir+'/training_error.png',dpi=300, bbox_inches='tight')
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
           print(config.sample_dir)
-            
+           #save training 
+          self.save(config.checkpoint_dir, counter)  
     
           
         # Update D network
@@ -285,9 +297,7 @@ class DCGAN(object):
             time.time() - start_time, 
             errD_fake+errD_real, errG))
 
-        #save training every 500 batches
-        if np.mod(counter, 500) == 2:
-          self.save(config.checkpoint_dir, counter)
+          
           
   def discriminator(self, image, reuse=False):
     print('DISCRIMINATOR------------------------------------------')
@@ -422,7 +432,9 @@ class DCGAN(object):
 
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
+      #it should be possible to select a particular checkpoint by using ckpt.all_model_checkpoint_paths
       ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+    
       self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
       print(" [*] Success to read {}".format(ckpt_name))
       return True

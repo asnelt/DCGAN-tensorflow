@@ -21,7 +21,7 @@ flags = tf.app.flags
 
 
 #parameter set specifiying data
-flags.DEFINE_string("dataset", "gaussian_fr", "The name of dataset. It can have a gaussian or uniform shape")
+flags.DEFINE_string("dataset", "retinal_data", "The name of dataset. It can have a gaussian or uniform shape")
 flags.DEFINE_integer("num_classes", 2, "Number of sample classes [3]")
 flags.DEFINE_string("classes_proportion", '7030', "this will control the proportion of each class. It can be 'equal' or '7030'")
 flags.DEFINE_integer("num_samples", 100000, "Number of samples to generate [50000]")
@@ -29,7 +29,8 @@ flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
 flags.DEFINE_string("iteration", "0", "in case several instances are run with the same parameters")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
-flags.DEFINE_boolean("visualize_data", False, "True for visualizing data [True]")
+flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
+flags.DEFINE_boolean("neuron", 18, "Neuron for which to model the response")
 FLAGS = flags.FLAGS
 if not os.path.exists(FLAGS.sample_dir):
     os.makedirs(FLAGS.sample_dir)
@@ -37,6 +38,8 @@ if not os.path.exists(FLAGS.sample_dir):
 num_rep = 1
 num_samples_per_rep = 500
 data_provider = DataProvider(FLAGS)
+asdasdsad
+
 data = data_provider.data[:,:,0]
 
 #print(np.shape(np.vstack({tuple(row) for row in data})))

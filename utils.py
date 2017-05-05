@@ -200,9 +200,9 @@ def samples_statistics(r, name, parameters):
     #plt.show()
     plt.close(f)
     if name=='real':
-        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'prb_samples':numerical_prob}
+        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'prb_samples':numerical_prob, 'training_step':parameters.training_step}
     else:
-        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'prb_samples':numerical_prob}
+        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'prb_samples':numerical_prob, 'training_step':parameters.training_step}
     
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
@@ -254,12 +254,15 @@ def evaluate_training(folder,sbplt,ind):
     real_spkC_std = real_data['std']
     real_spkC_prf_act = real_data['prf_act']
     real_probs_samples = real_data['prb_samples']
+    training_step = real_data['training_step']
+    
     best_ac_fit = {}
     best_ac_fit['acf'] = real_acf
     best_ac_fit['mean'] = real_data['mean']
     best_ac_fit['std'] = real_data['std']
     best_ac_fit['prf_act'] = real_data['prf_act']  
     best_ac_fit['prb_samples'] = real_data['prb_samples']  
+    
     best_mean_prob_fit = best_ac_fit.copy()
    
        
@@ -298,16 +301,9 @@ def evaluate_training(folder,sbplt,ind):
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         
         #mean probability of samples
-        training_probs_mat[ind_f,:] = np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples#training_data['prb_samples']#/real_probs_samples#
+        training_probs_mat[ind_f,:] = training_data['prb_samples']#np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples
         error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples)/len(real_probs_samples)
-#        plt.figure()
-#        plt.plot(real_probs_samples,label='real')
-#        plt.plot(training_data['prb_samples'],label='fake')
-#        plt.legend(shadow=True, fancybox=True)
-#        plt.show(block=True)
-#        
-#        plt.close()
-        
+
         
        
         if min_error_ac>error_ac[ind_f]:
@@ -317,6 +313,7 @@ def evaluate_training(folder,sbplt,ind):
             best_ac_fit['std_fake'] = training_data['std']
             best_ac_fit['prf_act_fake'] = training_data['prf_act']
             best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
+            best_ac_fit['error'] = min_error_ac
         if min_error_mean_prob>error_probs_samples[ind_f]:
             min_error_mean_prob = error_probs_samples[ind_f]
             best_mean_prob_fit['acf_fake'] = training_acf
@@ -339,45 +336,42 @@ def evaluate_training(folder,sbplt,ind):
     error_probs_samples = np.array(error_probs_samples)[indices]
     training_probs_mat  = np.array(training_probs_mat)[indices]
     
-#    maximo = np.max(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
-#    minimo = np.min(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
-#    np.shape(training_probs_mat)
-#    plt.ion()
-#    plt.figure()
-#    plt.subplot(2,1,1)
-#    plt.imshow(training_probs_mat,vmin=minimo,vmax=maximo)
-#    plt.title(str(np.shape(training_probs_mat)))
-#    plt.colorbar()
-#    plt.subplot(2,1,2)
-#    mat_aux = np.tile(real_probs_samples,(50,1))
-#    plt.imshow(mat_aux,vmin=minimo,vmax=maximo)
-#    plt.title(str(np.shape(mat_aux)))
-#    plt.colorbar()
-#    plt.show()
-#    
-#    plt.pause(0.05)
-#    asdasdass
+    maximo = np.max(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
+    minimo = np.min(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
+    f = plt.figure()
+    plt.subplot(2,1,1)
+    plt.imshow(training_probs_mat,vmin=minimo,vmax=maximo,aspect='auto')
+    plt.colorbar()
+    plt.subplot(2,1,2)
+    real_probs_samples = np.expand_dims(real_probs_samples,axis=0)
+    plt.imshow(real_probs_samples,vmin=minimo,vmax=maximo,aspect='auto')
+    plt.colorbar()
+   
+    f.savefig('probs_mat.png',dpi=600, bbox_inches='tight')
+    plt.close()
     
   
     sbplt[0][0].plot(error_ac)
     sbplt[0][0].set_title('AC error')
-    sbplt[0][0].set_xlabel('epoch')
+    sbplt[0][0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[0][0].set_ylabel('L1 distance')
     sbplt[0][1].plot(spkC_mean)
     sbplt[0][1].plot(np.ones(len(files),)*real_spkC_mean)
     sbplt[0][1].set_title('spk-count mean error')
-    sbplt[0][1].set_xlabel('epoch')
+    sbplt[0][1].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[0][1].set_ylabel('absolute difference')
     sbplt[1][0].plot(spkC_std)
     sbplt[1][0].plot(np.ones(len(files),)*real_spkC_std)
     sbplt[1][0].set_title('spk-count std error')
-    sbplt[1][0].set_xlabel('epoch')
+    sbplt[1][0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][0].set_ylabel('absolute difference')
     sbplt[1][1].plot(error_probs_samples,label=str(ind))
     sbplt[1][1].set_title('samples mean probability error')
-    sbplt[1][1].set_xlabel('epoch')
+    sbplt[1][1].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][1].set_ylabel('absolute difference')
     os.chdir(mycwd)
+    
+    return(best_ac_fit)
     
 def compare_trainings(folder,title):
     
@@ -395,8 +389,13 @@ def compare_trainings(folder,title):
 
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    min_error = 100000000
     for ind_f in range(len(files)):
-        evaluate_training(files[ind_f],sbplt,ind_f)
+        best_candidate = evaluate_training(files[ind_f],sbplt,ind_f)
+        if min_error>best_candidate['error']:
+            min_error = best_candidate['error']
+            best_fit = best_candidate.copy()
+           
     plt.legend(shadow=True, fancybox=True)
     plt.suptitle(title)
     plt.show()
@@ -404,6 +403,9 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.png',dpi=300, bbox_inches='tight')
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
+    
+    plot_best_fit(best_fit,'best_of_all_ac_fit')
+    
     
 def plot_best_fit(data,name):
     left  = 0.125  # the left side of the subplots of the figure

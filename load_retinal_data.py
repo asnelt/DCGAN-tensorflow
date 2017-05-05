@@ -22,7 +22,6 @@ def load_spikes(folder, movie, bin_size, num_bins):
     
     #get spikes
     spks = mat_contents['Spikes']
-    print(type(spks))
     
     duration = 0
     
@@ -67,13 +66,22 @@ def load_spikes(folder, movie, bin_size, num_bins):
 
 
 
-X,_ = load_spikes('/home/manuel/DATA/data/Scales/RetinalData/NeuralData/Spikes/','Movie2Exp1',1, 28)
+X,_ = load_spikes('/home/manuel/DATA/data/Scales/RetinalData/NeuralData/Spikes/','Movie2Exp1',1, 56)
 X[X>0] = 1
 
 print(np.shape(X))
 
 for ind_n in range(np.shape(X)[0]):
+    print('neuron '+str(ind_n))
+    
     aux = X[ind_n,:,:]
+    print(str(np.sum(aux.flatten())))
     aux = np.mean(aux,axis=0)
     plt.plot(aux)
 plt.show()
+print('neuron '+str(ind_n))
+    
+aux = np.sum(X,axis=0)
+print(str(np.sum(aux.flatten())))
+aux = np.mean(aux,axis=0)
+plt.plot(aux)

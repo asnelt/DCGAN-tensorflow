@@ -34,6 +34,12 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
+
 
 # refractory period = 2
 dataset = 'uniform_fr'
@@ -51,7 +57,11 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
-
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
 
 # GAUSSIAN FIRING RATES
 # no refractory period
@@ -70,6 +80,11 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
 
 # refractory period = 2
 dataset = 'gaussian_fr'
@@ -87,7 +102,11 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
-
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
 
 # 2 classes / refractory period = -1
 dataset = 'gaussian_fr'
@@ -105,7 +124,11 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
-
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
 
 # 2 classes / refractory period = 2
 dataset = 'gaussian_fr'
@@ -123,7 +146,11 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
-
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
 
 # 2 classes / refractory period = -1 / classes proportion 70-30
 dataset = 'gaussian_fr'
@@ -138,6 +165,11 @@ title =   dataset + ' numClasses:' + str(num_classes) + ' propClasses:' + classe
 utils.compare_trainings(main_folder+folder,title)
 fig = plt.figure(figsize=(8,8),dpi=250)
 img = mpimg.imread(main_folder+folder+'/training_error.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
@@ -157,5 +189,10 @@ img = mpimg.imread(main_folder+folder+'/training_error.png')
 imgplot = plt.imshow(img)
 pp.savefig(fig)
 plt.close()
+fig = plt.figure(figsize=(8,8),dpi=250)
+img = mpimg.imread(main_folder+folder+'/best_of_all_ac_fit.png')
+imgplot = plt.imshow(img)
+pp.savefig(fig)
+plt.close()    
+
 pp.close()
-    

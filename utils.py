@@ -294,9 +294,9 @@ def evaluate_training(folder,sbplt,ind):
             training_acf = training_acf/np.max(training_acf)
         error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))
         #spikeCount mean
-        spkC_mean[ind_f] = training_data['mean']
+        spkC_mean[ind_f] = np.abs(real_spkC_mean-training_data['mean'])
         #spikeCount std
-        spkC_std[ind_f] = training_data['std']
+        spkC_std[ind_f] = np.abs(real_spkC_std-training_data['std'])
          
         #acticity profile
         training_spkC_prf_act = training_data['prf_act']
@@ -358,12 +358,12 @@ def evaluate_training(folder,sbplt,ind):
     sbplt[0][0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[0][0].set_ylabel('L1 distance')
     sbplt[0][1].plot(spkC_mean)
-    sbplt[0][1].plot(np.ones(len(files),)*real_spkC_mean)
+    #sbplt[0][1].plot(np.ones(len(files),)*real_spkC_mean)
     sbplt[0][1].set_title('spk-count mean error')
     sbplt[0][1].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[0][1].set_ylabel('absolute difference')
     sbplt[1][0].plot(spkC_std)
-    sbplt[1][0].plot(np.ones(len(files),)*real_spkC_std)
+    #sbplt[1][0].plot(np.ones(len(files),)*real_spkC_std)
     sbplt[1][0].set_title('spk-count std error')
     sbplt[1][0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][0].set_ylabel('absolute difference')

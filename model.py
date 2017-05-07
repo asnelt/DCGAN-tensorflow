@@ -190,7 +190,7 @@ class DCGAN(object):
     
     counter = 1
     start_time = time.time()
-    if self.load(self.checkpoint_dir):
+    if self.load(self.checkpoint_dir,config.training_stage):
       print(" [*] Load SUCCESS")
     else:
       print(" [!] Load failed...")
@@ -206,8 +206,9 @@ class DCGAN(object):
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
         
-        #every 500 batches, we get and save a sample (note that the inputs are always the same)
-        if idx==0 or (epoch==0 and idx<=100 and idx%50==0):
+          
+        if np.mod(counter, config.training_step)==0:# and self.dataset_name!='calcium_transients':
+          #every 500 batches, we get and save a sample (note that the inputs are always the same)  
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
             feed_dict={
@@ -225,11 +226,8 @@ class DCGAN(object):
                   fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
           fig.savefig('./{}/train_{:03d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
           plt.close(fig)
-          
-          
-        if np.mod(counter, config.training_step)==0:# and self.dataset_name!='calcium_transients':
           #get autocorrelogram
-          utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config)
+          utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config,d_loss,g_loss)
           f,sbplt = plt.subplots(2,2,figsize=(8, 8),dpi=250)
     
           left  = 0.125  # the left side of the subplots of the figure
@@ -426,14 +424,23 @@ class DCGAN(object):
             os.path.join(checkpoint_dir, model_name),
             global_step=step)
 
-  def load(self, checkpoint_dir):
+  def load(self, checkpoint_dir,training_stage):
     print(" [*] Reading checkpoints...")
     checkpoint_dir = os.path.join(checkpoint_dir, self.model_dir)
-
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+        
     if ckpt and ckpt.model_checkpoint_path:
-      #it should be possible to select a particular checkpoint by using ckpt.all_model_checkpoint_paths
-      ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+      if training_stage=='':
+          #it should be possible to select a particular checkpoint by using ckpt.all_model_checkpoint_paths
+          ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+      else:
+          index = ckpt.all_model_checkpoint_paths[0].find('DCGAN.model')
+          index = ckpt.all_model_checkpoint_paths[0].find('-',index)
+          for ind_ckpt in range(len(ckpt.all_model_checkpoint_paths)):
+              counter = ckpt.all_model_checkpoint_paths[ind_ckpt][index+1:]
+              if counter==training_stage:
+                  ckpt_name = os.path.basename(ckpt.all_model_checkpoint_paths[ind_ckpt])
+                  break
     
       self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
       print(" [*] Success to read {}".format(ckpt_name))

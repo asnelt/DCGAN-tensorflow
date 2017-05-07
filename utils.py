@@ -303,8 +303,8 @@ def evaluate_training(folder,sbplt,ind):
         error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         
         #mean probability of samples
-        training_probs_mat[ind_f,:] = training_data['prb_samples']#np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples
-        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples)/len(real_probs_samples)
+        training_probs_mat[ind_f,:] = np.abs(real_probs_samples-training_data['prb_samples'])#np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples
+        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples']))/len(real_probs_samples)
 
         
        
@@ -322,8 +322,8 @@ def evaluate_training(folder,sbplt,ind):
             best_mean_prob_fit['mean_fake'] = training_data['mean']
             best_mean_prob_fit['std_fake'] = training_data['std']
             best_mean_prob_fit['prf_act_fake'] = training_data['prf_act']
-            best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
-      
+            best_mean_prob_fit['prob_samples_fake'] = training_data['prb_samples']
+            best_mean_prob_fit['error'] = min_error_mean_prob
     
     #plot best fits
     plot_best_fit(best_ac_fit,'best_ac_fit')
@@ -373,7 +373,7 @@ def evaluate_training(folder,sbplt,ind):
     sbplt[1][1].set_ylabel('absolute difference')
     os.chdir(mycwd)
     
-    return(best_ac_fit)
+    return(best_ac_fit,best_mean_prob_fit)
     
 def compare_trainings(folder,title):
     print('--------------------------------------------------')
@@ -392,14 +392,18 @@ def compare_trainings(folder,title):
 
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-    min_error = 100000000
+    min_error_ac = 100000000
+    min_error_prob = 100000000
     for ind_f in range(len(files)):
         print(files[ind_f])
-        best_candidate = evaluate_training(files[ind_f],sbplt,ind_f)
-        if min_error>best_candidate['error']:
-            min_error = best_candidate['error']
-            best_fit = best_candidate.copy()
-           
+        best_candidate_ac,best_candidate_prob = evaluate_training(files[ind_f],sbplt,ind_f)
+        if min_error_ac>best_candidate_ac['error']:
+            min_error_ac = best_candidate_ac['error']
+            best_fit_ac = best_candidate_ac.copy()
+        if min_error_prob>best_candidate_prob['error']:
+            min_error_prob = best_candidate_prob['error']
+            best_fit_prob = best_candidate_prob.copy()
+
     plt.legend(shadow=True, fancybox=True)
     plt.suptitle(title)
     plt.show()
@@ -408,7 +412,8 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
     
-    plot_best_fit(best_fit,folder+'/best_of_all_ac_fit')
+    plot_best_fit(best_fit_ac,folder+'/best_of_all_ac_fit')
+    plot_best_fit(best_fit_prob,folder+'/best_of_all_prob_fit')
     
     
 def plot_best_fit(data,name):
@@ -431,6 +436,7 @@ def plot_best_fit(data,name):
     sbplt2[1].set_title('time course average')
     sbplt2[1].set_xlabel('time')
     sbplt2[1].set_ylabel('average firing rate')
+    sbplt2[1].set_ylim(0,0.12)
     plt.suptitle('best ac fit')
     plt.legend(shadow=True, fancybox=True)
     plt.show()

@@ -249,7 +249,8 @@ def evaluate_training(folder,sbplt,ind):
     os.chdir(folder)
     real_data = np.load('autocorrelogramreal.npz')
     real_acf = real_data['acf']
-    real_acf = real_acf/np.max(real_acf)
+    if np.max(real_acf)>0:
+        real_acf = real_acf/np.max(real_acf)
     real_spkC_mean = real_data['mean']
     real_spkC_std = real_data['std']
     real_spkC_prf_act = real_data['prf_act']
@@ -289,7 +290,8 @@ def evaluate_training(folder,sbplt,ind):
         training_data = np.load(name)
         #autocorrelogram
         training_acf = training_data['acf']
-        training_acf = training_acf/np.max(training_acf)
+        if np.max(training_acf)>0:
+            training_acf = training_acf/np.max(training_acf)
         error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))
         #spikeCount mean
         spkC_mean[ind_f] = training_data['mean']
@@ -374,7 +376,8 @@ def evaluate_training(folder,sbplt,ind):
     return(best_ac_fit)
     
 def compare_trainings(folder,title):
-    
+    print('--------------------------------------------------')
+    print(folder)
     find_aux = folder.find('iteration')
     files = glob.glob(folder[0:find_aux]+'*')
     #figure for training error across epochs
@@ -391,6 +394,7 @@ def compare_trainings(folder,title):
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
     min_error = 100000000
     for ind_f in range(len(files)):
+        print(files[ind_f])
         best_candidate = evaluate_training(files[ind_f],sbplt,ind_f)
         if min_error>best_candidate['error']:
             min_error = best_candidate['error']
@@ -404,7 +408,7 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
     
-    plot_best_fit(best_fit,'best_of_all_ac_fit')
+    plot_best_fit(best_fit,folder+'/best_of_all_ac_fit')
     
     
 def plot_best_fit(data,name):

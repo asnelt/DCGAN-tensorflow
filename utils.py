@@ -150,7 +150,7 @@ def make_gif(images, fname, duration=2, true_image=False):
   clip = mpy.VideoClip(make_frame, duration=duration)
   clip.write_gif(fname, fps = len(images) / duration)
 
-def samples_statistics(r, name, parameters):
+def samples_statistics(r, name, parameters,d_loss=None,g_loss=None):
     folder = parameters.sample_dir
     print('plot autocorrelogram')
     #first we get the average, std of the spike-count and the average time course
@@ -202,18 +202,18 @@ def samples_statistics(r, name, parameters):
     if name=='real':
         data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'samples':samples, 'prb_samples':numerical_prob, 'training_step':parameters.training_step}
     else:
-        data = {'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'prb_samples':numerical_prob, 'training_step':parameters.training_step}
+        data = {'d_loss':d_loss,'g_loss':g_loss,'mean':mean_spk_count,'std':std_spk_count,'acf':ac,'index':index,'prf_act':profile_activity,'prb_samples':numerical_prob, 'training_step':parameters.training_step}
     
     np.savez(folder + '/autocorrelogram' + name + '.npz', **data)
     
     
-def get_samples_autocorrelogram(sess, dcgan,name,parameters):
+def get_samples_autocorrelogram(sess, dcgan,name,parameters,d_loss,g_loss):
     folder = parameters.sample_dir
     num_samples = int(2**np.log2(parameters.num_samples))
     num_trials = int(num_samples/dcgan.batch_size)
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
     for ind_tr in range(num_trials):
-        z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+        z_sample, = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
         X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] \
                 = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
     
@@ -221,7 +221,7 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters):
     binarized_X_reduced = binarized_X[:,:,0]
     
     #compute statistics
-    samples_statistics(binarized_X_reduced,name,parameters)  
+    samples_statistics(binarized_X_reduced,name,parameters,d_loss,g_loss)  
     
     
     #compute average activity
@@ -263,7 +263,7 @@ def evaluate_training(folder,sbplt,ind):
     best_ac_fit['std'] = real_data['std']
     best_ac_fit['prf_act'] = real_data['prf_act']  
     best_ac_fit['prb_samples'] = real_data['prb_samples']  
-    
+    best_ac_fit['folder'] = folder
     best_mean_prob_fit = best_ac_fit.copy()
    
        
@@ -315,6 +315,8 @@ def evaluate_training(folder,sbplt,ind):
             best_ac_fit['std_fake'] = training_data['std']
             best_ac_fit['prf_act_fake'] = training_data['prf_act']
             best_ac_fit['prob_samples_fake'] = training_data['prb_samples']
+            best_ac_fit['epoch'] = epoch
+            best_ac_fit['step'] = step
             best_ac_fit['error'] = min_error_ac
         if min_error_mean_prob>error_probs_samples[ind_f]:
             min_error_mean_prob = error_probs_samples[ind_f]
@@ -323,12 +325,15 @@ def evaluate_training(folder,sbplt,ind):
             best_mean_prob_fit['std_fake'] = training_data['std']
             best_mean_prob_fit['prf_act_fake'] = training_data['prf_act']
             best_mean_prob_fit['prob_samples_fake'] = training_data['prb_samples']
+            best_mean_prob_fit['epoch'] = epoch
+            best_mean_prob_fit['step'] = step
             best_mean_prob_fit['error'] = min_error_mean_prob
     
     #plot best fits
     plot_best_fit(best_ac_fit,'best_ac_fit')
+    plt.close()
     plot_best_fit(best_mean_prob_fit,'best_mean_prob_fit')
-    
+    plt.close()
     
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
@@ -412,8 +417,8 @@ def compare_trainings(folder,title):
     f.savefig(folder+'/training_error.svg',dpi=300, bbox_inches='tight')
     plt.close()
     
-    plot_best_fit(best_fit_ac,folder+'/best_of_all_ac_fit')
-    plot_best_fit(best_fit_prob,folder+'/best_of_all_prob_fit')
+    
+    return(best_fit_ac,best_fit_prob)
     
     
 def plot_best_fit(data,name):
@@ -437,14 +442,13 @@ def plot_best_fit(data,name):
     sbplt2[1].set_xlabel('time')
     sbplt2[1].set_ylabel('average firing rate')
     sbplt2[1].set_ylim(0,0.12)
-    plt.suptitle('best ac fit')
+    plt.suptitle(name)
     plt.legend(shadow=True, fancybox=True)
     plt.show()
     f.savefig(name + '.png',dpi=300, bbox_inches='tight')
     f.savefig(name + '.svg',dpi=300, bbox_inches='tight') 
-    plt.close()
     np.savez(name + '.npz', **data)
-    
+    return(f)
     
 def probability_data(parameters,data):
     num_classes = parameters.num_classes

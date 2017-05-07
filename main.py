@@ -32,6 +32,7 @@ flags.DEFINE_boolean("is_train", False, "True for training, False for testing [F
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
 flags.DEFINE_integer("training_step", 250, "number of batches between weigths and performance saving")
+flags.DEFINE_string("training_stage", '', "stage of the training used for the GAN")
 #parameter set specifiying data
 flags.DEFINE_string("dataset", "gaussian_fr", "The name of dataset. It can have a gaussian or uniform shape")
 flags.DEFINE_integer("num_classes", 1, "Number of sample classes [3]")
@@ -41,6 +42,7 @@ flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
 flags.DEFINE_string("iteration", "0", "in case several instances are run with the same parameters")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
 flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
+
 FLAGS = flags.FLAGS
 
 def main(_):
@@ -81,7 +83,7 @@ def main(_):
         data_provider.visualize()
       dcgan.train(data_provider.data, FLAGS)
     else:
-      if not dcgan.load(FLAGS.checkpoint_dir):
+      if not dcgan.load(FLAGS.checkpoint_dir,FLAGS.training_stage):
         raise Exception("[!] Train a model first, then run test mode")      
 
     # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
@@ -90,8 +92,8 @@ def main(_):
     #                 [dcgan.h3_w, dcgan.h3_b, dcgan.g_bn3],
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
-    # Below is codes for visualization
-    get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS.sample_dir)
+    # Below is the code for visualization
+    get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS,0,0)
     get_samples(sess, dcgan,FLAGS.sample_dir)
     compare_trainings(FLAGS.sample_dir,'training errors')
 

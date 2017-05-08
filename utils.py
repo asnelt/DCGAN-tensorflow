@@ -213,7 +213,7 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters,d_loss,g_loss):
     num_trials = int(num_samples/dcgan.batch_size)
     X = np.ndarray((num_samples,int(dcgan.output_height),1))    
     for ind_tr in range(num_trials):
-        z_sample, = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+        z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
         X[np.arange(ind_tr*dcgan.batch_size,(ind_tr+1)*dcgan.batch_size),:,:] \
                 = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
     

@@ -74,7 +74,7 @@ dataset = 'uniform_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = -1
-num_samples = 16384
+num_samples = 8192#16384
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 # refractory period = 2
@@ -82,7 +82,7 @@ dataset = 'uniform_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = 2
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 
@@ -92,7 +92,7 @@ dataset = 'gaussian_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = -1
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 
@@ -101,7 +101,7 @@ dataset = 'gaussian_fr'
 num_classes = 1
 classes_proportion = 'equal' 
 ref_period = 2
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 
@@ -110,7 +110,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = 'equal' 
 ref_period = -1
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 # 2 classes / refractory period = 2
@@ -118,7 +118,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = 'equal' 
 ref_period = 2
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 # 2 classes / refractory period = -1 / classes proportion 70-30
@@ -126,7 +126,7 @@ dataset = 'gaussian_fr'
 num_classes = 2
 classes_proportion = '7030' 
 ref_period = -1
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 
@@ -134,7 +134,7 @@ get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_b
 num_classes = 2
 classes_proportion = '7030' 
 ref_period = 2
-num_samples = 16384
+
 get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,num_bins,ref_period,pp)
 
 

@@ -196,7 +196,7 @@ def samples_statistics(r, name, parameters,d_loss=None,g_loss=None):
     index = np.linspace(-lag,lag,2*lag+1)
     plt.plot(index, ac)
     plt.title('mean spk-count = ' + str(round(mean_spk_count,3)) + ' (' + str(round(std_spk_count,3)) + ')')
-    f.savefig(folder + '/autocorrelogram' + name + '.png', bbox_inches='tight')
+    f.savefig(folder + '/autocorrelogram' + name + '.svg', bbox_inches='tight')
     #plt.show()
     plt.close(f)
     if name=='real':
@@ -228,19 +228,32 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters,d_loss,g_loss):
     f = plt.figure()
     aux = np.mean(binarized_X_reduced,axis=0)
     plt.plot(aux)
-    f.savefig(folder + '/average_activity' + name + '.png', bbox_inches='tight')
+    f.savefig(folder + '/average_activity' + name + '.svg', bbox_inches='tight')
     #plt.show()
     plt.close(f)
       
 def get_samples(sess,dcgan,folder):    
     z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
     samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
-    samples_plot = ops.binarize(samples_plot)
-    fig,sbplt = plt.subplots(8,8)
+    num_rows = 4
+    num_cols = 4
+    samples_plot = samples_plot[0:num_rows*num_cols,:]
+    #binnarize and plot over the probabilities
+    samples_plot_bin = ops.binarize(samples_plot)
+    fig,sbplt = plt.subplots(num_rows,num_cols)
+    for ind_pl in range(np.shape(samples_plot_bin)[0]):
+        sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].plot(samples_plot_bin[int(ind_pl),:])
+        sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].set_ylim(0,np.max([1,np.max(samples_plot.flatten())]))
+        #sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].axis('off')
+    
     for ind_pl in range(np.shape(samples_plot)[0]):
-        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
-        sbplt[int(np.floor(ind_pl/8))][ind_pl%8].axis('off')
-    fig.savefig(folder + '/fake_samples_binarized.png',dpi=199, bbox_inches='tight')
+        sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].plot(samples_plot[int(ind_pl),:],'--')
+        sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].set_ylim(0,np.max([1,np.max(samples_plot.flatten())]))
+        sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].axis('off')
+    
+    
+    fig.savefig(folder + '/fake_samples.svg',dpi=199, bbox_inches='tight')
+    fig.savefig(folder + '/fake_samples.png',dpi=199, bbox_inches='tight')
     #plt.show()
     plt.close(fig)
 
@@ -422,6 +435,10 @@ def compare_trainings(folder,title):
     
     
 def plot_best_fit(data,name):
+    fake_mean = float(data['mean_fake'])    
+    fake_std = float(data['std_fake'])
+    real_mean = float(data['mean'])
+    real_std = float(data['std'])
     left  = 0.125  # the left side of the subplots of the figure
     right = 0.9    # the right side of the subplots of the figure
     bottom = 0.1   # the bottom of the subplots of the figure
@@ -438,7 +455,7 @@ def plot_best_fit(data,name):
     sbplt2[0].set_ylabel('proportion of spikes')
     sbplt2[1].plot(data['prf_act'],label='real')
     sbplt2[1].plot(data['prf_act_fake'],label='fake')
-    sbplt2[1].set_title('time course average')
+    sbplt2[1].set_title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
     sbplt2[1].set_xlabel('time')
     sbplt2[1].set_ylabel('average firing rate')
     sbplt2[1].set_ylim(0,0.12)
@@ -449,7 +466,7 @@ def plot_best_fit(data,name):
     f.savefig(name + '.svg',dpi=300, bbox_inches='tight') 
     np.savez(name + '.npz', **data)
     return(f)
-    
+   
 def probability_data(parameters,data):
     num_classes = parameters.num_classes
     num_samples = int(np.shape(data)[0])

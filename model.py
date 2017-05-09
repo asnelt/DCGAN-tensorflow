@@ -207,7 +207,7 @@ class DCGAN(object):
               .astype(np.float32)
         
           
-        if np.mod(counter, config.training_step)==0:# and self.dataset_name!='calcium_transients':
+        if np.mod(counter, config.training_step)==1:# and self.dataset_name!='calcium_transients':
           #every 500 batches, we get and save a sample (note that the inputs are always the same)  
           samples, d_loss, g_loss = self.sess.run(
             [self.sampler, self.d_loss, self.g_loss],
@@ -217,7 +217,7 @@ class DCGAN(object):
             }
           )
           samples_plot = samples[:,:,0]
-          samples_plot = ops.binarize(samples_plot)
+          #samples_plot = ops.binarize(samples_plot)
           fig,sbplt = plt.subplots(8,8)
           for ind_pl in range(np.shape(samples_plot)[0]):
               sbplt[int(np.floor(ind_pl/8))][ind_pl%8].plot(samples_plot[int(ind_pl),:])
@@ -225,6 +225,11 @@ class DCGAN(object):
               if ind_pl==0:
                   fig.suptitle("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
           fig.savefig('./{}/train_{:03d}_{:04d}.png'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
+          plt.close(fig)
+          
+          fig = plt.figure()
+          plt.plot(np.transpose(samples_plot))
+          fig.savefig('./{}/trainAll_{:03d}_{:04d}.svg'.format(config.sample_dir, epoch, idx),dpi=199, bbox_inches='tight')
           plt.close(fig)
           #get autocorrelogram
           utils.get_samples_autocorrelogram(self.sess, self,'train_{:03d}_{:04d}'.format(epoch, idx), config,d_loss,g_loss)
@@ -241,11 +246,11 @@ class DCGAN(object):
           plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
           utils.evaluate_training(config.sample_dir,sbplt,0)
           f.savefig(config.sample_dir+'/training_error.png',dpi=300, bbox_inches='tight')
+          
           print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss)) 
           print(config.sample_dir)
            #save training 
           self.save(config.checkpoint_dir, counter)  
-    
           
         # Update D network
         _, summary_str = self.sess.run([d_optim, self.d_sum],

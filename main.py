@@ -41,6 +41,7 @@ flags.DEFINE_integer("num_samples", 50000, "Number of samples to generate [50000
 flags.DEFINE_integer("num_bins", 28, "Number of spike train bins bins [28]")
 flags.DEFINE_string("iteration", "0", "in case several instances are run with the same parameters")
 flags.DEFINE_integer("ref_period", -1, "minimum number of ms between spikes (if < 0, no refractory period is imposed)")
+flags.DEFINE_float("firing_rate", 0.1, "maximum firing rate of the simulated responses")
 flags.DEFINE_boolean("visualize_data", True, "True for visualizing data [True]")
 
 FLAGS = flags.FLAGS
@@ -48,10 +49,10 @@ FLAGS = flags.FLAGS
 def main(_):
   pp.pprint(flags.FLAGS.__flags)
   FLAGS.checkpoint_dir = FLAGS.checkpoint_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
-  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_iteration_' + FLAGS.iteration
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_firing_rate_' + str(FLAGS.firing_rate) + '_iteration_' + FLAGS.iteration
   
   FLAGS.sample_dir = FLAGS.sample_dir + '_dataset_' + FLAGS.dataset + '_num_classes_' + str(FLAGS.num_classes) + '_propClasses_' + FLAGS.classes_proportion + \
-  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_iteration_' + FLAGS.iteration
+  '_num_samples_' + str(FLAGS.num_samples) + '_num_bins_' + str(FLAGS.num_bins) + '_ref_period_' + str(FLAGS.ref_period) + '_firing_rate_' + str(FLAGS.firing_rate) + '_iteration_' + FLAGS.iteration
   print(FLAGS.checkpoint_dir)
   if not os.path.exists(FLAGS.checkpoint_dir):
     os.makedirs(FLAGS.checkpoint_dir)

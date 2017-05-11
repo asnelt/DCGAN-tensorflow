@@ -20,7 +20,7 @@ def generate_spike_trains(parameters):
     num_samples = parameters.num_samples
     num_bins = parameters.num_bins
     refr_per = parameters.ref_period
-    firing_rate = 0.1
+    firing_rate = parameters.firing_rate
     
     
     if parameters.dataset=='gaussian_fr':
@@ -141,7 +141,7 @@ def generate_spike_trains(parameters):
             
             #plt.show()
 
-            fig.savefig(parameters.sample_dir + '/real_samples.png',dpi=199, bbox_inches='tight')
+            fig.savefig(parameters.sample_dir + '/real_samples.svg',dpi=199, bbox_inches='tight')
             plt.close(fig)
 
             f,sbplt = plt.subplots(1,2)

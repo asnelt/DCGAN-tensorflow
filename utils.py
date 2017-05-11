@@ -277,6 +277,7 @@ def evaluate_training(folder,sbplt,ind):
     best_ac_fit['prf_act'] = real_data['prf_act']  
     best_ac_fit['prb_samples'] = real_data['prb_samples']  
     best_ac_fit['folder'] = folder
+    best_ac_fit['iteration'] = folder[folder.find('iteration')+10:]
     best_mean_prob_fit = best_ac_fit.copy()
    
        
@@ -317,8 +318,10 @@ def evaluate_training(folder,sbplt,ind):
         
         #mean probability of samples
         training_probs_mat[ind_f,:] = np.abs(real_probs_samples-training_data['prb_samples'])#np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples
-        error_probs_samples[ind_f] = np.sum(np.abs(real_probs_samples-training_data['prb_samples']))/len(real_probs_samples)
-
+        
+        prob_logs = training_data['prb_samples']*np.log2(training_data['prb_samples']/real_probs_samples)
+        prob_logs = np.delete(prob_logs,np.nonzero(training_data['prb_samples']==0))
+        error_probs_samples[ind_f] = np.sum(prob_logs)
         
        
         if min_error_ac>error_ac[ind_f]:
@@ -370,7 +373,9 @@ def evaluate_training(folder,sbplt,ind):
     f.savefig('probs_mat.png',dpi=600, bbox_inches='tight')
     plt.close()
     
-  
+    
+    
+    #plot training error traces
     sbplt[0][0].plot(error_ac)
     sbplt[0][0].set_title('AC error')
     sbplt[0][0].set_xlabel('training step (' + str(training_step) + ' batches)')
@@ -389,6 +394,30 @@ def evaluate_training(folder,sbplt,ind):
     sbplt[1][1].set_title('samples mean probability error')
     sbplt[1][1].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][1].set_ylabel('absolute difference')
+    
+    #save training error traces only for the current simulation
+    f,sbplt2 = plt.subplots(2,1,figsize=(8, 8),dpi=250)
+    
+    left  = 0.125  # the left side of the subplots of the figure
+    right = 0.9    # the right side of the subplots of the figure
+    bottom = 0.1   # the bottom of the subplots of the figure
+    top = 0.9      # the top of the subplots of the figure
+    wspace = 0.4   # the amount of width reserved for blank space between subplots
+    hspace = 0.4   # the amount of height reserved for white space between subplots
+
+    matplotlib.rcParams.update({'font.size': 8})
+    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    sbplt2[1].plot(error_ac)
+    sbplt2[1].set_title('AC error')
+    sbplt2[1].set_xlabel('training step (' + str(training_step) + ' batches)')
+    sbplt2[1].set_ylabel('L1 distance')
+    sbplt2[0].plot(spkC_mean)
+    #sbplt2[0].plot(np.ones(len(files),)*real_spkC_mean)
+    sbplt2[0].set_title('spk-count mean error')
+    sbplt2[0].set_xlabel('training step (' + str(training_step) + ' batches)')
+    sbplt2[1].set_ylabel('absolute difference')
+    f.savefig('training error traces alone.svg',dpi=600, bbox_inches='tight')
+    plt.close()
     os.chdir(mycwd)
     
     return(best_ac_fit,best_mean_prob_fit)
@@ -445,7 +474,7 @@ def plot_best_fit(data,name):
     top = 0.9      # the top of the subplots of the figure
     wspace = 0.4   # the amount of width reserved for blank space between subplots
     hspace = 0.4   # the amount of height reserved for white space between subplots
-    f,sbplt2 = plt.subplots(1,2,figsize=(8, 8),dpi=250)
+    f,sbplt2 = plt.subplots(1,2,figsize=(8, 2),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
     sbplt2[0].plot(data['acf'],label='real')
@@ -458,8 +487,9 @@ def plot_best_fit(data,name):
     sbplt2[1].set_title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
     sbplt2[1].set_xlabel('time')
     sbplt2[1].set_ylabel('average firing rate')
-    sbplt2[1].set_ylim(0,0.12)
-    plt.suptitle(name)
+    maximo = np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
+    sbplt2[1].set_ylim(0,maximo+maximo/10)
+    plt.suptitle('iteration ' + str(data['iteration']) + ' epoch ' + str(data['epoch']) + ' step ' + str(data['step'])) 
     plt.legend(shadow=True, fancybox=True)
     plt.show()
     f.savefig(name + '.png',dpi=300, bbox_inches='tight')

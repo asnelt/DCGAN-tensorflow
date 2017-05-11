@@ -41,7 +41,7 @@ def get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,n
                         + ' --firing_rate=' + str(firing_rate) + ' --epoch=50 --num_samples=' + str(num_samples) + ' --iteration ' + iteration + ' --training_stage=' + str(training_stage))
      
         fig = plt.figure(figsize=(8,8),dpi=250)
-        img = mpimg.imread(best_fit_ac['folder']+'/fake_samples_binarized.png')
+        img = mpimg.imread(best_fit_ac['folder']+'/fake_samples.png')
         plt.imshow(img)
         pp.savefig(fig)
         plt.close()
@@ -62,7 +62,7 @@ def get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,n
                   + ' --firing_rate=' + str(firing_rate) + ' --epoch=50 --num_samples=' + str(num_samples) + ' --iteration ' + iteration + ' --training_stage=' + str(training_stage))
     
         fig = plt.figure(figsize=(8,8),dpi=250)
-        img = mpimg.imread(best_fit_prob['folder']+'/fake_samples_binarized.png')
+        img = mpimg.imread(best_fit_prob['folder']+'/fake_samples.png')
         plt.imshow(img)
         pp.savefig(fig)
         plt.close()
@@ -72,7 +72,7 @@ def get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,n
 pp = PdfPages(main_folder+'/training_error_summary.pdf')
 num_bins = 28
 num_samples = 8192#16384
-option = 4
+option = 3
 all_options = False
 ac_or_prob = 'ac'
 firing_rate = 0.5

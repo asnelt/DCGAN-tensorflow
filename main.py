@@ -96,7 +96,7 @@ def main(_):
     # Below is the code for visualization
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS,0,0)
     get_samples(sess, dcgan,FLAGS.sample_dir)
-    compare_trainings(FLAGS.sample_dir,'training errors')
+    #compare_trainings(FLAGS.sample_dir,'training errors')
 
 if __name__ == '__main__':
   tf.app.run()

@@ -235,6 +235,10 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters,d_loss,g_loss):
 def get_samples(sess,dcgan,folder):    
     z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
     samples_plot = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+    
+    plot_samples(samples_plot,folder,'fake')
+    
+def plot_samples(samples_plot,folder,name):   
     num_rows = 4
     num_cols = 4
     samples_plot = samples_plot[0:num_rows*num_cols,:]
@@ -252,10 +256,32 @@ def get_samples(sess,dcgan,folder):
         sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].axis('off')
     
     
-    fig.savefig(folder + '/fake_samples.svg',dpi=199, bbox_inches='tight')
-    fig.savefig(folder + '/fake_samples.png',dpi=199, bbox_inches='tight')
+    fig.savefig(folder + '/' + name + '_samples.svg',dpi=199, bbox_inches='tight')
+    fig.savefig(folder + '/' + name + '_samples.png',dpi=199, bbox_inches='tight')
     #plt.show()
     plt.close(fig)
+    
+    
+    fig = plt.figure(figsize=(8,2),dpi=250)
+    num_samples_raster = 6
+    for ind_pl in range(num_samples_raster):
+        plt.subplot(2,1,1)
+        plt.plot(ind_pl*len(samples_plot[int(ind_pl),:])*np.ones((2,)),[0.7,1.5],'--k')
+        plt.subplot(2,1,2)
+        plt.plot(ind_pl*len(samples_plot[int(ind_pl),:])*np.ones((2,)),[0,1],'--k')
+        spiketimes = np.nonzero(samples_plot_bin[int(ind_pl),:]!=0)[0] + ind_pl*len(samples_plot[int(ind_pl),:])
+        for ind_spk in range(len(spiketimes)):
+            plt.subplot(2,1,1)
+            plt.plot(spiketimes[ind_spk]*np.ones((2,)),[1,1.1],'b')
+        plt.subplot(2,1,2)
+        plt.plot(np.arange(ind_pl*len(samples_plot[int(ind_pl),:]),(ind_pl+1)*len(samples_plot[int(ind_pl),:])),samples_plot[int(ind_pl),:],'g')
+    plt.subplot(2,1,1)
+    plt.ylim(0.7,1.5)
+    plt.xlim(0,num_samples_raster*len(samples_plot[int(ind_pl),:]))
+    plt.subplot(2,1,2)
+    plt.xlim(0,num_samples_raster*len(samples_plot[int(ind_pl),:]))
+    fig.savefig(folder + '/' + name + '_rasters.svg',dpi=199, bbox_inches='tight')
+    fig.savefig(folder + '/' + name + '_rasters.png',dpi=199, bbox_inches='tight')
 
 def evaluate_training(folder,sbplt,ind):
     mycwd = os.getcwd()

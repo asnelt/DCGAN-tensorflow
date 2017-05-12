@@ -239,9 +239,10 @@ def get_samples(sess,dcgan,folder):
     plot_samples(samples_plot,folder,'fake')
     
 def plot_samples(samples_plot,folder,name):   
-    num_rows = 4
-    num_cols = 4
+    num_rows = 6
+    num_cols = 6
     samples_plot = samples_plot[0:num_rows*num_cols,:]
+    num_bins = np.shape(samples_plot)[1]
     #binnarize and plot over the probabilities
     samples_plot_bin = ops.binarize(samples_plot)
     fig,sbplt = plt.subplots(num_rows,num_cols)
@@ -262,24 +263,22 @@ def plot_samples(samples_plot,folder,name):
     plt.close(fig)
     
     
-    fig = plt.figure(figsize=(8,2),dpi=250)
+    fig = plt.figure(figsize=(8,4),dpi=250)
     num_samples_raster = 6
-    for ind_pl in range(num_samples_raster):
-        plt.subplot(2,1,1)
-        plt.plot(ind_pl*len(samples_plot[int(ind_pl),:])*np.ones((2,)),[0.7,1.5],'--k')
-        plt.subplot(2,1,2)
-        plt.plot(ind_pl*len(samples_plot[int(ind_pl),:])*np.ones((2,)),[0,1],'--k')
-        spiketimes = np.nonzero(samples_plot_bin[int(ind_pl),:]!=0)[0] + ind_pl*len(samples_plot[int(ind_pl),:])
-        for ind_spk in range(len(spiketimes)):
-            plt.subplot(2,1,1)
-            plt.plot(spiketimes[ind_spk]*np.ones((2,)),[1,1.1],'b')
-        plt.subplot(2,1,2)
-        plt.plot(np.arange(ind_pl*len(samples_plot[int(ind_pl),:]),(ind_pl+1)*len(samples_plot[int(ind_pl),:])),samples_plot[int(ind_pl),:],'g')
-    plt.subplot(2,1,1)
-    plt.ylim(0.7,1.5)
-    plt.xlim(0,num_samples_raster*len(samples_plot[int(ind_pl),:]))
-    plt.subplot(2,1,2)
-    plt.xlim(0,num_samples_raster*len(samples_plot[int(ind_pl),:]))
+    for ind_r in range(num_rows):
+        plt.subplot(num_rows,1,ind_r+1)
+        for ind_pl in range(num_samples_raster):
+            #plt.plot(ind_pl*len(samples_plot[int(ind_pl),:])*np.ones((2,)),[0.7,1.5],'--k')
+            spiketimes = np.nonzero(samples_plot_bin[ind_pl+num_samples_raster*ind_r,:]!=0)[0] + ind_pl*num_bins+2
+            for ind_spk in range(len(spiketimes)):
+                plt.plot(spiketimes[ind_spk]*np.ones((2,)),[1.1,1.2],'b')
+
+            plt.plot(np.arange(ind_pl*num_bins,(ind_pl+1)*num_bins)+2,samples_plot[ind_pl+num_samples_raster*ind_r,:],'g')
+            
+        plt.ylim(0,1.5)
+        plt.xlim(0,num_samples_raster*num_bins)
+        plt.xlim(0,num_samples_raster*num_bins)
+        plt.axis('off')
     fig.savefig(folder + '/' + name + '_rasters.svg',dpi=199, bbox_inches='tight')
     fig.savefig(folder + '/' + name + '_rasters.png',dpi=199, bbox_inches='tight')
 
@@ -371,12 +370,8 @@ def evaluate_training(folder,sbplt,ind):
             best_mean_prob_fit['step'] = step
             best_mean_prob_fit['error'] = min_error_mean_prob
     
-    #plot best fits
-    plot_best_fit(best_ac_fit,'best_ac_fit')
-    plt.close()
-    plot_best_fit(best_mean_prob_fit,'best_mean_prob_fit')
-    plt.close()
-    
+   
+    #sort traces
     indices = np.argsort(train_step)
     error_ac = np.array(error_ac)[indices]
     spkC_mean = np.array(spkC_mean)[indices]
@@ -385,6 +380,7 @@ def evaluate_training(folder,sbplt,ind):
     error_probs_samples = np.array(error_probs_samples)[indices]
     training_probs_mat  = np.array(training_probs_mat)[indices]
     
+    #plot prob of each real sample
     maximo = np.max(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
     minimo = np.min(np.concatenate((real_probs_samples,training_probs_mat.flatten()),axis=0))
     f = plt.figure()
@@ -399,7 +395,11 @@ def evaluate_training(folder,sbplt,ind):
     f.savefig('probs_mat.png',dpi=600, bbox_inches='tight')
     plt.close()
     
-    
+    #put traces on best fit dictionary 
+    best_ac_fit['spk_mean_error'] = spkC_mean
+    best_ac_fit['ac_error'] = error_ac
+    best_mean_prob_fit['spk_mean_error'] = spkC_mean
+    best_mean_prob_fit['ac_error'] = error_ac
     
     #plot training error traces
     sbplt[0][0].plot(error_ac)
@@ -443,7 +443,20 @@ def evaluate_training(folder,sbplt,ind):
     sbplt2[0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt2[1].set_ylabel('absolute difference')
     f.savefig('training error traces alone.svg',dpi=600, bbox_inches='tight')
+    
+    
+    
+    #plot best fits
+    plot_best_fit(best_ac_fit,'best_ac_fit',error_ac,spkC_mean,training_step)
     plt.close()
+    
+    
+    
+    plot_best_fit(best_mean_prob_fit,'best_mean_prob_fit',error_ac,spkC_mean,training_step)
+    plt.close()
+    
+    plt.close()
+    
     os.chdir(mycwd)
     
     return(best_ac_fit,best_mean_prob_fit)
@@ -489,7 +502,8 @@ def compare_trainings(folder,title):
     return(best_fit_ac,best_fit_prob)
     
     
-def plot_best_fit(data,name):
+def plot_best_fit(data,name,error_ac,spkC_mean,training_step):
+    lag = 10
     fake_mean = float(data['mean_fake'])    
     fake_std = float(data['std_fake'])
     real_mean = float(data['mean'])
@@ -503,20 +517,37 @@ def plot_best_fit(data,name):
     f,sbplt2 = plt.subplots(1,2,figsize=(8, 2),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-    sbplt2[0].plot(data['acf'],label='real')
-    sbplt2[0].plot(data['acf_fake'],'--',label='fake')
-    sbplt2[0].set_title('AC function')
-    sbplt2[0].set_xlabel('time')
-    sbplt2[0].set_ylabel('proportion of spikes')
-    sbplt2[1].plot(data['prf_act'],label='real')
-    sbplt2[1].plot(data['prf_act_fake'],label='fake')
-    sbplt2[1].set_title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
-    sbplt2[1].set_xlabel('time')
-    sbplt2[1].set_ylabel('average firing rate')
-    maximo = np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
-    sbplt2[1].set_ylim(0,maximo+maximo/10)
+    index = np.linspace(-lag,lag,2*lag+1)
+    
+    
+    
+    sbplt2[0].plot(spkC_mean,'k')
+    sbplt2[0].set_title('spk-count mean error')
+    sbplt2[0].set_xlabel('training epoch')
+    sbplt2[0].set_ylabel('absolute difference')
+    sbplt2[1].plot(error_ac,'k')
+    sbplt2[1].set_title('AC error')
+    sbplt2[1].set_xlabel('training epoch')
+    sbplt2[1].set_ylabel('L1 distance')
+    #f.savefig('training error traces alone.svg',dpi=600, bbox_inches='tight')
+    
+    plt.axes([.65, .42, .2, .4])
+    plt.plot(index,data['acf'],'b',label='real')
+    plt.plot(index,data['acf_fake'],'--r',label='fake')
+   
+    plt.xlabel('time')
+    #plt.ylabel('proportion of spikes')
+    
+    plt.axes([.2, .42, .2, .4])
+    plt.plot(data['prf_act']*1000,'b',label='real')
+    plt.plot(data['prf_act_fake']*1000,'r',label='fake')
+    plt.title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
+    plt.xlabel('time')
+    #plt.ylabel('mean firing rate (Hz)')
+    maximo = 1000*np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
+    plt.ylim(0,maximo+maximo/10)
     plt.suptitle('iteration ' + str(data['iteration']) + ' epoch ' + str(data['epoch']) + ' step ' + str(data['step'])) 
-    plt.legend(shadow=True, fancybox=True)
+    #plt.legend(shadow=True, fancybox=True)
     plt.show()
     f.savefig(name + '.png',dpi=300, bbox_inches='tight')
     f.savefig(name + '.svg',dpi=300, bbox_inches='tight') 

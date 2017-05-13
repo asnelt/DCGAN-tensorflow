@@ -102,7 +102,19 @@ def generate_spike_trains(parameters):
     elif parameters.dataset=='retinal_data':
         if refr_per!=-1:    
             raise ValueError("Applying refractory period to retinal data!")
-        X,_ = load_spikes('/home/manuel/DATA/data/Scales/RetinalData/NeuralData/Spikes/','Movie2Exp1',1, num_bins)        
+        X,_ = load_retinal_data('/home/manuel/DATA/data/Scales/RetinalData/NeuralData/Spikes/','Movie2Exp1',1, num_bins)        
+        X = np.expand_dims(X,axis=2)
+        X[X>0] = 1
+        y = np.ones((num_samples, 1))
+        counter = np.zeros((1,num_classes))
+        counter[0] = num_samples   
+        
+    elif parameters.dataset=='kayser_data':
+        if parameters.neuron=='':    
+            raise ValueError("Please, enter the file corresponding to the neuron you want to model")
+        if refr_per!=-1:    
+            raise ValueError("Applying refractory period to real data!")
+        X = load_kayser_data(parameters.neuron, bin_size=1, num_bins)
         X = np.expand_dims(X,axis=2)
         X[X>0] = 1
         y = np.ones((num_samples, 1))
@@ -217,7 +229,7 @@ def refractory_period_control(refr_per, r, firing_rate):
     return r
 
 
-def load_spikes(folder, movie, bin_size, num_bins):
+def load_retinal_data(folder, movie, bin_size, num_bins):
     #load
     mat_contents = sio.loadmat(folder + movie + '.mat')
     #create figures folder
@@ -269,3 +281,37 @@ def load_spikes(folder, movie, bin_size, num_bins):
     
     binned_mat = np.mean(binned_mat,axis=0)
     return binned_mat,spks
+
+def load_kayser_data(file, bin_size, num_bins):
+    duration = 20000
+    #load
+    mat_contents = sio.loadmat(file)
+    
+    spks = mat_contents['neuron_noise']
+    
+    size_mat = spks.shape    
+    num_trials = size_mat[1]
+    num_samples_per_trial = int(duration/(num_bins*bin_size))
+    num_samples = int(num_samples_per_trial*num_trials)
+    
+    binned_mat = np.zeros((num_samples, num_bins))
+    maximo = 0
+    minimo = 100000
+    
+    contador = 0
+    for ind_trial in range(num_trials):
+        trial_spks = spks[0,ind_trial]
+        for ind_w in range(num_samples_per_trial):
+            window_spks = trial_spks[((ind_w*bin_size*num_bins)<=trial_spks) & (((ind_w+1)*bin_size*num_bins)>trial_spks)] - ind_w*bin_size*num_bins
+            
+            if window_spks.size !=0:
+                maximo = np.max([maximo,np.max(window_spks)])
+                minimo = np.min([minimo,np.min(window_spks)])
+                num_spks = window_spks.size
+                for ind_spks in range(num_spks):
+                    binned_mat[contador][int(np.floor((window_spks[ind_spks])/bin_size))] = \
+                    binned_mat[contador][int(np.floor((window_spks[ind_spks])/bin_size))] + 1
+                
+                contador += 1    
+ 
+    return binned_mat

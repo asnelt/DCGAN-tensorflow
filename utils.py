@@ -416,7 +416,7 @@ def evaluate_training(folder,sbplt,ind):
     sbplt[1][0].set_title('spk-count std error')
     sbplt[1][0].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][0].set_ylabel('absolute difference')
-    sbplt[1][1].plot(error_probs_samples,label=str(ind))
+    sbplt[1][1].plot(error_probs_samples,label=best_ac_fit['iteration'])
     sbplt[1][1].set_title('samples mean probability error')
     sbplt[1][1].set_xlabel('training step (' + str(training_step) + ' batches)')
     sbplt[1][1].set_ylabel('absolute difference')

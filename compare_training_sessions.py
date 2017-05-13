@@ -68,10 +68,10 @@ def get_figures(main_folder,dataset,num_classes,classes_proportion,num_samples,n
         plt.close()
         
 
-def select_experiment(all_options=False,option=3,firing_rate=0.5):   
+def select_experiment(all_options=False,option=3,firing_rate=0.5,num_samples=8192,num_bins=28):   
     pp = PdfPages(main_folder+'/training_error_summary.pdf')
-    num_bins = 28
-    num_samples = 8192#16384
+    
+    #16384
     ac_or_prob = 'ac'
     if option==1 or all_options:
         # UNIFORM FIRING RATES
@@ -160,7 +160,7 @@ def select_experiment(all_options=False,option=3,firing_rate=0.5):
         pp.close()
 
 
-#select_experiment(False,3)
-select_experiment(False,4)
+select_experiment(False,3,num_samples=1024)
+select_experiment(False,4,num_samples=1024)
 #select_experiment(False,5)
 #select_experiment(False,7)

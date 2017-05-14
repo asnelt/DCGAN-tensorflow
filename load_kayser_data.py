@@ -107,7 +107,7 @@ def autocorrelogram(r,folder,name):
     std_spk_count = np.std(np.sum(r,axis=1))
     margin = np.zeros((r.shape[0],lag))
     #concatenate margins to then flatten the trials matrix
-    r = np.hstack((margin,np.hstack((r,margin))))1
+    r = np.hstack((margin,np.hstack((r,margin))))
     r_flat = r.flatten()
     spiketimes = np.nonzero(r_flat>0)
     ac = np.zeros(2*lag+1)

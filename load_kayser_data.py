@@ -76,7 +76,6 @@ def get_files(bin_size=1,num_bins=28):
 
 
 def autocorrelogram(r,folder,name):
-    
     #plot some samples
     num_rows = 6
     num_cols = 6
@@ -96,6 +95,7 @@ def autocorrelogram(r,folder,name):
     f = plt.figure()
     aux = np.mean(r,axis=0)
     plt.plot(aux)
+    plt.title(str(np.shape(r)[0]))
     f.savefig(folder + '/average_activity_' + name + '.svg', bbox_inches='tight')
     #plt.show()
     plt.close(f)
@@ -107,7 +107,7 @@ def autocorrelogram(r,folder,name):
     std_spk_count = np.std(np.sum(r,axis=1))
     margin = np.zeros((r.shape[0],lag))
     #concatenate margins to then flatten the trials matrix
-    r = np.hstack((margin,np.hstack((r,margin))))
+    r = np.hstack((margin,np.hstack((r,margin))))1
     r_flat = r.flatten()
     spiketimes = np.nonzero(r_flat>0)
     ac = np.zeros(2*lag+1)
@@ -118,7 +118,7 @@ def autocorrelogram(r,folder,name):
     f = plt.figure()
     index = np.linspace(-lag,lag,2*lag+1)
     plt.plot(index, ac)
-    plt.title('mean spk-count = ' + str(round(mean_spk_count,3)) + ' (' + str(round(std_spk_count,3)) + ')')
+    plt.title('mean spk-count = ' + str(round(mean_spk_count,3)) + ' (' + str(round(std_spk_count,3)) + ') numSamp = ' + str(np.shape(r)[0]))
     f.savefig(folder + '/autocorrelogram_' + name + '.png', bbox_inches='tight')
     plt.close(f)
    

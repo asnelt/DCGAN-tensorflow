@@ -59,6 +59,8 @@ def generate_spike_trains(parameters):
         X = (np.zeros((num_samples,num_bins,1)) + firing_rate) > np.random.random((num_samples,num_bins,1))
         X = X.astype(float)
         X[X>0] = 1
+        X[:,0] = 0
+        X[:,-1] = 0
         y = np.ones((num_samples, 1))
         counter = np.zeros((1,num_classes))
         counter[0] = num_samples   
@@ -114,7 +116,9 @@ def generate_spike_trains(parameters):
             raise ValueError("Please, enter the file corresponding to the neuron you want to model")
         if refr_per!=-1:    
             raise ValueError("Applying refractory period to real data!")
-        X = load_kayser_data(parameters.neuron, bin_size=1, num_bins)
+            
+        folder = '/home/manuel/DATA/data/Scales/auditory data Kayser/'
+        X = load_kayser_data(folder+parameters.neuron, 1, num_bins)
         X = np.expand_dims(X,axis=2)
         X[X>0] = 1
         y = np.ones((num_samples, 1))

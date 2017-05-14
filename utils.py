@@ -346,7 +346,7 @@ def evaluate_training(folder,sbplt,ind):
         
         prob_logs = training_data['prb_samples']*np.log2(training_data['prb_samples']/real_probs_samples)
         prob_logs = np.delete(prob_logs,np.nonzero(training_data['prb_samples']==0))
-        error_probs_samples[ind_f] = np.sum(prob_logs)
+        error_probs_samples[ind_f] = np.sum(prob_logs)+(1-np.sum(training_data['prb_samples']))*np.log2((1-np.sum(training_data['prb_samples']))/np.min(real_probs_samples))
         
        
         if min_error_ac>error_ac[ind_f]:
@@ -514,6 +514,20 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step):
     top = 0.9      # the top of the subplots of the figure
     wspace = 0.4   # the amount of width reserved for blank space between subplots
     hspace = 0.4   # the amount of height reserved for white space between subplots
+    
+    #plot probs
+    f,sbplt = plt.subplots(1,1,figsize=(8, 8),dpi=250)
+    matplotlib.rcParams.update({'font.size': 8})
+    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    sbplt.loglog(data['prb_samples'],data['prob_samples_fake'],'.',basex=10)
+    sbplt.loglog(np.linspace(0,1,10000),np.linspace(0,1,10000),basex=10)
+    sbplt.set_xlabel('probabilities of samples in real dataset')
+    sbplt.set_ylabel('probabilities of samples in generated dataset')
+    f.savefig(name + 'samples_probabilities.png',dpi=300, bbox_inches='tight')
+    f.savefig(name + 'samples_probabilities.svg',dpi=300, bbox_inches='tight') 
+    plt.close()
+    
+    
     f,sbplt2 = plt.subplots(1,2,figsize=(8, 2),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
@@ -558,7 +572,7 @@ def probability_data(parameters,data):
     num_classes = parameters.num_classes
     num_samples = int(np.shape(data)[0])
     num_bins = parameters.num_bins
-    firing_rate = 0.1
+    firing_rate = parameters.firing_rate
     if parameters.dataset=='gaussian_fr':
         margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
         std_resp = 4 #std of the gaussian defining the firing rates

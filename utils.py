@@ -502,7 +502,8 @@ def compare_trainings(folder,title):
     return(best_fit_ac,best_fit_prob)
     
     
-def plot_best_fit(data,name,error_ac,spkC_mean,training_step):
+def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
+                  num_classes=None,num_samples=None,num_bins=None, firing_rate=None,dataset=None,classes_proportion=None):
     lag = 10
     fake_mean = float(data['mean_fake'])    
     fake_std = float(data['std_fake'])
@@ -519,10 +520,32 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step):
     f,sbplt = plt.subplots(1,1,figsize=(8, 8),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-    sbplt.loglog(data['prb_samples'],data['prob_samples_fake'],'.',basex=10)
+    
+    if num_classes!=None:
+        real_samples = np.load(data['folder'] + '/autocorrelogramreal.npz')
+        real_samples = real_samples['samples']
+        aux = np.load('/home/manuel/DCGAN-tensorflow/samples/numerical_probs_num_samples_500000.npz')
+        theoretical_probs = aux['numerical_prob']
+        theoretical_samples = aux['diff_samples']
+        real_samples_prob = np.zeros((np.shape(real_samples)[0],))
+        for ind_s in range(np.shape(real_samples)[0]):
+            sample = real_samples[ind_s,:]
+            sample_mat = np.tile(sample,(np.shape(theoretical_samples)[0],1))
+            compare_mat = np.sum(np.abs(theoretical_samples-sample_mat),axis=1)
+            if np.count_nonzero(compare_mat==0)==1:
+                real_samples_prob[ind_s] = theoretical_probs[np.nonzero(compare_mat==0)]
+            elif np.count_nonzero(compare_mat==0)!=0:
+                print('errorrrrr')
+        
+        sbplt.loglog(data['prb_samples'],real_samples_prob,'+r',basex=10)
+    
+    sbplt.loglog(data['prb_samples'],data['prob_samples_fake'],'xb',basex=10)
     sbplt.loglog(np.linspace(0,1,10000),np.linspace(0,1,10000),basex=10)
+    
+    
     sbplt.set_xlabel('probabilities of samples in real dataset')
     sbplt.set_ylabel('probabilities of samples in generated dataset')
+    sbplt.set_title(str(np.sum(data['prob_samples_fake'])))
     f.savefig(name + 'samples_probabilities.png',dpi=300, bbox_inches='tight')
     f.savefig(name + 'samples_probabilities.svg',dpi=300, bbox_inches='tight') 
     plt.close()
@@ -568,28 +591,28 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step):
     np.savez(name + '.npz', **data)
     return(f)
    
-def probability_data(parameters,data):
-    num_classes = parameters.num_classes
+def probability_data(data,num_classes,num_samples,num_bins, firing_rate,dataset,classes_proportion):
+    num_classes = num_classes
     num_samples = int(np.shape(data)[0])
-    num_bins = parameters.num_bins
-    firing_rate = parameters.firing_rate
-    if parameters.dataset=='gaussian_fr':
+    num_bins = num_bins
+    firing_rate = firing_rate
+    if dataset=='gaussian_fr':
         margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
         std_resp = 4 #std of the gaussian defining the firing rates
-        if parameters.classes_proportion=='equal':
+        if classes_proportion=='equal':
             mat_prop_classes = np.ones((num_classes,))/num_classes
-        elif parameters.classes_proportion=='7030':    
+        elif classes_proportion=='7030':    
             mat_prop_classes = [0.7,0.3]
         else:
-            raise ValueError("Unknown dataset '" + parameters.classes_proportion + "'")
+            raise ValueError("Unknown dataset '" + classes_proportion + "'")
              
             
         t = np.arange(num_bins)
         
         peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,num_classes)
         
-        
-        probs_mat = np.zeros((num_classes,))
+        probs_mat = np.zeros((num_classes,num_samples))
+        #calculate the probability of getting each sample and average it
         for ind in range(num_classes):
             fr = firing_rate*np.exp(-(t-peaks1[ind])**2/std_resp**2)
             fr_noSpk = np.tile(fr,(num_samples,1))
@@ -598,12 +621,12 @@ def probability_data(parameters,data):
             prob_noSpk_bins = np.prod(1-fr_noSpk,axis=1)
             fr_Spk[data==0] = 1
             prob_Spk_bins = np.prod(fr_Spk,axis=1)
-            probs_mat[ind] = prob_noSpk_bins*prob_Spk_bins
+            probs_mat[ind,:] = prob_noSpk_bins*prob_Spk_bins*mat_prop_classes[ind]
             
-        probData = np.sum(mat_prop_classes*probs_mat)
-          
+        probData = np.sum(probs_mat,axis=0)
+        #probData = probData/np.sum(probData)  
             
-    elif parameters.dataset=='uniform_fr':
+    elif dataset=='uniform_fr':
         fr_noSpk =np.zeros((num_samples,num_bins)) + firing_rate
         fr_Spk =np.zeros((num_samples,num_bins)) + firing_rate
         fr_noSpk[data==1] = 0

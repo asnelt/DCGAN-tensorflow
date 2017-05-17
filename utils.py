@@ -327,19 +327,20 @@ def evaluate_training(folder,sbplt,ind):
         step = name[find_us+find_us2+2:find_dot]
         train_step[ind_f] = int(epoch+step)
         training_data = np.load(name)
+        #acticity profile
+        training_spkC_prf_act = training_data['prf_act']
+        error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
         #autocorrelogram
         training_acf = training_data['acf']
         if np.max(training_acf)>0:
             training_acf = training_acf/np.max(training_acf)
-        error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))
+        error_ac[ind_f] = np.sum(np.abs(real_acf-training_acf))#/4 + np.sum(np.abs(real_spkC_prf_act/np.max(real_spkC_prf_act)-training_spkC_prf_act/np.max(training_spkC_prf_act)))/4
         #spikeCount mean
         spkC_mean[ind_f] = np.abs(real_spkC_mean-training_data['mean'])
         #spikeCount std
         spkC_std[ind_f] = np.abs(real_spkC_std-training_data['std'])
          
-        #acticity profile
-        training_spkC_prf_act = training_data['prf_act']
-        error_spkC_prf_act[ind_f] = np.sum(np.abs(real_spkC_prf_act-training_spkC_prf_act))
+        
         
         #mean probability of samples
         training_probs_mat[ind_f,:] = np.abs(real_probs_samples-training_data['prb_samples'])#np.abs(real_probs_samples-training_data['prb_samples'])/real_probs_samples
@@ -517,7 +518,7 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
     hspace = 0.4   # the amount of height reserved for white space between subplots
     
     #plot probs
-    f,sbplt = plt.subplots(1,1,figsize=(8, 8),dpi=250)
+    f,sbplt = plt.subplots(1,2,figsize=(8, 3),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
     
@@ -537,15 +538,19 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
             elif np.count_nonzero(compare_mat==0)!=0:
                 print('errorrrrr')
         
-        sbplt.loglog(data['prb_samples'],real_samples_prob,'+r',basex=10)
+        sbplt[0].loglog(data['prob_samples_fake'],real_samples_prob,'xr',basex=10)
+        sbplt[0].loglog(data['prb_samples'],real_samples_prob,'+b',basex=10)
+    equal_line =   np.linspace(0.0001,0.1,10000)
+    sbplt[0].loglog(equal_line,equal_line,basex=10)
+    sbplt[1].loglog(data['prb_samples'],data['prob_samples_fake'],'+b',basex=10)
+    sbplt[1].loglog(equal_line,equal_line,basex=10)
     
-    sbplt.loglog(data['prb_samples'],data['prob_samples_fake'],'xb',basex=10)
-    sbplt.loglog(np.linspace(0,1,10000),np.linspace(0,1,10000),basex=10)
-    
-    
-    sbplt.set_xlabel('probabilities of samples in real dataset')
-    sbplt.set_ylabel('probabilities of samples in generated dataset')
-    sbplt.set_title(str(np.sum(data['prob_samples_fake'])))
+    sbplt[0].set_xlabel('frequencies of samples in real dataset')
+    sbplt[0].set_ylabel('theoretical probabilities')
+    sbplt[0].set_title(str(np.sum(data['prob_samples_fake'])))
+    sbplt[1].set_xlabel('frequencies of samples in generated dataset')
+    sbplt[1].set_ylabel('theoretical probabilities')
+    sbplt[1].set_title(str(np.sum(data['prob_samples_fake'])))
     f.savefig(name + 'samples_probabilities.png',dpi=300, bbox_inches='tight')
     f.savefig(name + 'samples_probabilities.svg',dpi=300, bbox_inches='tight') 
     plt.close()
@@ -581,8 +586,8 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
     plt.title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
     plt.xlabel('time')
     #plt.ylabel('mean firing rate (Hz)')
-    maximo = 1000*np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
-    plt.ylim(0,maximo+maximo/10)
+    #maximo = 1000*np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
+    #plt.ylim(0,maximo+maximo/10)
     plt.suptitle('iteration ' + str(data['iteration']) + ' epoch ' + str(data['epoch']) + ' step ' + str(data['step'])) 
     #plt.legend(shadow=True, fancybox=True)
     plt.show()

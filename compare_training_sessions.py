@@ -155,8 +155,16 @@ def select_experiment(all_options=False,option=3,firing_rate=0.5,num_samples=819
             pp.close()
             
     if option==9:
-        num_samples = 21420#19992 #
-        neuron = 'AuditoryDataM03.Jg_longnat3_sites2_neuron_4_noise_1.mat'#'AuditoryDataM03.Jf_longnat3_sites3_neuron_3_noise_1.mat' #
+        num_samples = 21420
+        neuron = 'AuditoryDataM03.Jg_longnat3_sites2_neuron_4_noise_1.mat'
+        get_figures(main_folder,0,0,0,num_samples,num_bins,0,pp,firing_rate,option,neuron)
+        ###########
+        num_samples = 19992 
+        neuron = 'AuditoryDataM03.Jf_longnat3_sites3_neuron_3_noise_1.mat' #
+        get_figures(main_folder,0,0,0,num_samples,num_bins,0,pp,firing_rate,option,neuron)
+        
+        num_samples = 19992 
+        neuron = 'AuditoryDataM03.Jf_longnat3_sites3_neuron_4_noise_1.mat' #
         get_figures(main_folder,0,0,0,num_samples,num_bins,0,pp,firing_rate,option,neuron)
         if not all_options:
             pp.close()
@@ -169,10 +177,10 @@ def select_experiment(all_options=False,option=3,firing_rate=0.5,num_samples=819
 
 #select_experiment(False,3,num_samples=2048)
 #select_experiment(False,4,num_samples=2048)
-#select_experiment(False,3)
+select_experiment(False,3)
 #select_experiment(False,4)
 #select_experiment(False,5)
 #select_experiment(False,7)
 #select_experiment(False,9)
-select_experiment(False,3,num_samples=1024)
-select_experiment(False,4,num_samples=1024)
+#select_experiment(False,3,num_samples=1024)
+#select_experiment(False,4,num_samples=1024)

@@ -124,6 +124,20 @@ def generate_spike_trains(parameters):
         y = np.ones((num_samples, 1))
         counter = np.zeros((1,num_classes))
         counter[0] = num_samples   
+        
+    elif parameters.dataset=='kayser_data_lfp':
+        if parameters.neuron=='':    
+            raise ValueError("Please, enter the file corresponding to the neuron you want to model")
+        if refr_per!=-1:    
+            raise ValueError("Applying refractory period to real data!")
+            
+        folder = '/home/manuel/DATA/data/Scales/auditory data Kayser/'
+        X = load_kayser_data_LFP(folder+parameters.neuron, 1, num_bins)
+        X = np.expand_dims(X,axis=2)
+        X[X>0] = 1
+        y = np.ones((num_samples, 1))
+        counter = np.zeros((1,num_classes))
+        counter[0] = num_samples   
     else:
         raise ValueError("Unknown dataset '" + parameters.dataset + "'")
                   
@@ -317,5 +331,15 @@ def load_kayser_data(file, bin_size, num_bins):
                     binned_mat[contador][int(np.floor((window_spks[ind_spks])/bin_size))] + 1
                 
                 contador += 1    
+ 
+    return binned_mat
+
+
+
+def load_kayser_data_LFP(file, bin_size, num_bins):
+    #load
+    mat_contents = sio.loadmat(file)
+       
+    binned_mat = mat_contents['transitions']
  
     return binned_mat

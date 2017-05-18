@@ -3,8 +3,10 @@ import os
 
 from subprocess import call
 import numpy as np
+import tensorflow as tf
 
 import utils
+from model import DCGAN
 
 folder_name = "samples_dataset_gaussian_fr_num_classes_1_propClasses_equal_num_samples_2048_num_bins_28_ref_period_-1_firing_rate_0.5_iteration_18"
 
@@ -15,6 +17,24 @@ def generate_fake():
 
 def generate_real():
     return(utils.get_more_real_samples_gaussian_no_refrPer(num_samples=2048).astype(np.bool))
+
+def generate_random(n_samples=2048, output_height=28):
+    run_config = tf.ConfigProto()
+    run_config.gpu_options.allow_growth=True
+    samples = np.empty((n_samples, output_height));
+    with tf.Session(config=run_config) as sess:
+        dcgan = DCGAN(
+            sess,
+            dataset_name="gaussian_fr",
+            checkpoint_dir="checkpoint_random",
+            sample_dir="sample_random")
+        tf.global_variables_initializer().run()
+        n_passes = int(n_samples/dcgan.batch_size)
+        for n in range(n_passes):
+            z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
+            samples[n*dcgan.batch_size:(n+1)*dcgan.batch_size] = np.squeeze(sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample}))
+
+    return samples
 
 def frequency_table(a):
     num_samples = a.shape[0]
@@ -49,6 +69,7 @@ def kl_term(px, qx):
 def full_distance_matrix(n_real, n_fake):
     real = [frequency_table(generate_real()) for each in range(n_real)]
     fake = [frequency_table(generate_fake()) for each in range(n_fake)]
+    print("Done generating stuff")
     return pairwise_distances(real + fake)
 
     
@@ -63,5 +84,3 @@ def pairwise_distances(ps):
     return distances
     
 
-
-    

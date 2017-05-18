@@ -175,9 +175,9 @@ def select_experiment(all_options=False,option=3,firing_rate=0.5,num_samples=819
         pp.close()
 
 
-#select_experiment(False,3,num_samples=2048)
+select_experiment(False,3,num_samples=2048)
 #select_experiment(False,4,num_samples=2048)
-select_experiment(False,3)
+#select_experiment(False,3)
 #select_experiment(False,4)
 #select_experiment(False,5)
 #select_experiment(False,7)

@@ -220,6 +220,8 @@ def get_samples_autocorrelogram(sess, dcgan,name,parameters,d_loss,g_loss):
     binarized_X = ops.binarize(X)
     binarized_X_reduced = binarized_X[:,:,0]
     
+    data = {'fake_samples':binarized_X_reduced}
+    np.savez(folder + '/fake_samples.npz', **data)
     #compute statistics
     samples_statistics(binarized_X_reduced,name,parameters,d_loss,g_loss)  
     
@@ -517,52 +519,17 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
     wspace = 0.4   # the amount of width reserved for blank space between subplots
     hspace = 0.4   # the amount of height reserved for white space between subplots
     
-    #plot probs
-    f,sbplt = plt.subplots(1,2,figsize=(8, 3),dpi=250)
-    matplotlib.rcParams.update({'font.size': 8})
-    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    
     
     if num_classes!=None:
-        real_samples = np.load(data['folder'] + '/autocorrelogramreal.npz')
-        real_samples = real_samples['samples']
-        aux = np.load('/home/manuel/DCGAN-tensorflow/samples/numerical_probs_num_samples_500000.npz')
-        theoretical_probs = aux['numerical_prob']
-        theoretical_samples = aux['diff_samples']
-        real_samples_prob = np.zeros((np.shape(real_samples)[0],))
-        for ind_s in range(np.shape(real_samples)[0]):
-            sample = real_samples[ind_s,:]
-            sample_mat = np.tile(sample,(np.shape(theoretical_samples)[0],1))
-            compare_mat = np.sum(np.abs(theoretical_samples-sample_mat),axis=1)
-            if np.count_nonzero(compare_mat==0)==1:
-                real_samples_prob[ind_s] = theoretical_probs[np.nonzero(compare_mat==0)]
-            elif np.count_nonzero(compare_mat==0)!=0:
-                print('errorrrrr')
+        plot_probabilities(data,name,firing_rate,num_classes,num_bins,num_samples,classes_proportion)
         
-        sbplt[0].loglog(data['prob_samples_fake'],real_samples_prob,'xr',basex=10)
-        sbplt[0].loglog(data['prb_samples'],real_samples_prob,'+b',basex=10)
-    equal_line =   np.linspace(0.0001,0.1,10000)
-    sbplt[0].loglog(equal_line,equal_line,basex=10)
-    sbplt[1].loglog(data['prb_samples'],data['prob_samples_fake'],'+b',basex=10)
-    sbplt[1].loglog(equal_line,equal_line,basex=10)
     
-    sbplt[0].set_xlabel('frequencies of samples in real dataset')
-    sbplt[0].set_ylabel('theoretical probabilities')
-    sbplt[0].set_title(str(np.sum(data['prob_samples_fake'])))
-    sbplt[1].set_xlabel('frequencies of samples in generated dataset')
-    sbplt[1].set_ylabel('theoretical probabilities')
-    sbplt[1].set_title(str(np.sum(data['prob_samples_fake'])))
-    f.savefig(name + 'samples_probabilities.png',dpi=300, bbox_inches='tight')
-    f.savefig(name + 'samples_probabilities.svg',dpi=300, bbox_inches='tight') 
-    plt.close()
-    
-    
+    #plot training error traces
     f,sbplt2 = plt.subplots(1,2,figsize=(8, 2),dpi=250)
     matplotlib.rcParams.update({'font.size': 8})
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-    index = np.linspace(-lag,lag,2*lag+1)
-    
-    
-    
+    index = np.linspace(-lag,lag,2*lag+1)   
     sbplt2[0].plot(spkC_mean,'k')
     sbplt2[0].set_title('spk-count mean error')
     sbplt2[0].set_xlabel('training epoch')
@@ -586,8 +553,8 @@ def plot_best_fit(data,name,error_ac,spkC_mean,training_step,
     plt.title('mean spk-count: ' + "{0:.2f}".format(fake_mean) + ' (' + "{0:.2f}".format(fake_std) + '). Real: ' + "{0:.2f}".format(real_mean) + ' (' + "{0:.2f}".format(real_std) + ')')
     plt.xlabel('time')
     #plt.ylabel('mean firing rate (Hz)')
-    #maximo = 1000*np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
-    #plt.ylim(0,maximo+maximo/10)
+    maximo = 1000*np.max(np.concatenate([data['prf_act'],data['prf_act_fake']]))
+    plt.ylim(0,maximo+maximo/10)
     plt.suptitle('iteration ' + str(data['iteration']) + ' epoch ' + str(data['epoch']) + ' step ' + str(data['step'])) 
     #plt.legend(shadow=True, fancybox=True)
     plt.show()
@@ -642,4 +609,155 @@ def probability_data(data,num_classes,num_samples,num_bins, firing_rate,dataset,
         
     return(probData)    
         
+def plot_probabilities(data,name,firing_rate,num_classes,num_bins,num_samples,classes_proportion):
+    left  = 0.125  # the left side of the subplots of the figure
+    right = 0.9    # the right side of the subplots of the figure
+    bottom = 0.1   # the bottom of the subplots of the figure
+    top = 0.9      # the top of the subplots of the figure
+    wspace = 0.4   # the amount of width reserved for blank space between subplots
+    hspace = 0.4   # the amount of height reserved for white space between subplots
+    f,sbplt = plt.subplots(1,3,figsize=(8, 3),dpi=250)
+    matplotlib.rcParams.update({'font.size': 8})
+    plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+    folder = str(data['folder'])
+    real_samples = np.load(folder + '/autocorrelogramreal.npz')
+    real_samples = real_samples['samples']
+    aux = np.load('/home/manuel/DCGAN-tensorflow/samples/numerical_probs_num_samples_500000.npz')
+    theoretical_probs = aux['numerical_prob']
+    theoretical_samples = aux['diff_samples']
+    real_samples_prob = np.zeros((np.shape(real_samples)[0],))
+    for ind_s in range(np.shape(real_samples)[0]):
+        sample = real_samples[ind_s,:]
+        sample_mat = np.tile(sample,(np.shape(theoretical_samples)[0],1))
+        compare_mat = np.sum(np.abs(theoretical_samples-sample_mat),axis=1)
+        if np.count_nonzero(compare_mat==0)==1:
+            real_samples_prob[ind_s] = theoretical_probs[np.nonzero(compare_mat==0)]
+        elif np.count_nonzero(compare_mat==0)!=0:
+            raise ValueError("utils, line 541")
+            
+    sbplt[0].loglog(data['prob_samples_fake'],real_samples_prob,'xr',basex=10)
+    sbplt[0].loglog(data['prb_samples'],real_samples_prob,'+b',basex=10)
+    equal_line =   np.linspace(0.0005,0.05,10000)
+    sbplt[0].loglog(equal_line,equal_line,basex=10)
+    sbplt[0].set_xlabel('frequencies of samples in real dataset')
+    sbplt[0].set_ylabel('theoretical probabilities')
+    sbplt[0].set_title(str(np.sum(data['prob_samples_fake'])) + '  ' + str(np.sum(data['prb_samples'][real_samples_prob==0])))
+    
+    
+    #load samples generated by the GAN
+    fake_samples = np.load(folder + '/fake_samples.npz')
+    fake_samples = fake_samples['fake_samples']
+    fake_samples_prob,fake_samples_freq,new_sample = get_new_and_impossible_samples(fake_samples,theoretical_samples,real_samples,theoretical_probs)
+    new_fake_samples = fake_samples[new_sample==1,:]
+    impossible_fake_samples = fake_samples[fake_samples_prob==0,:]
+    
+    #get more real datasets
+    num_real_dataset = 2
+    equal_line =   np.linspace(0.0005,0.005,10000)
+    num_of_impossible_samples = np.zeros((num_real_dataset,))
+    counter = 0
+    other_samples_prob_all = np.zeros((num_real_dataset*num_samples,))
+    other_samples_freq_all = np.zeros((num_real_dataset*num_samples,))
+    counter_num_other_samples = 0
+    for ind_f in range(num_real_dataset):
+        other_real_samples = get_more_real_samples_gaussian_no_refrPer(firing_rate,num_classes,num_bins,num_samples,classes_proportion)
+        print(np.shape(other_real_samples))
+        other_samples_prob,other_samples_freq,other_new_sample = get_new_and_impossible_samples(other_real_samples,theoretical_samples,real_samples,theoretical_probs)
+        #sbplt[1].loglog(other_samples_freq[other_new_sample==1]+0.0001,other_samples_prob[other_new_sample==1],'xc',basex=10)#,color = '0.75')          
+        num_of_impossible_samples[counter] = np.count_nonzero(other_samples_prob==0)
         
+        other_samples_prob_all[counter_num_other_samples:counter_num_other_samples+np.count_nonzero(other_new_sample==1)] = other_samples_prob[other_new_sample==1]
+        other_samples_freq_all[counter_num_other_samples:counter_num_other_samples+np.count_nonzero(other_new_sample==1)] = other_samples_freq[other_new_sample==1]
+        counter = counter + 1
+        counter_num_other_samples = counter_num_other_samples+len(other_samples_prob)
+    
+    
+    other_samples_prob_all = np.log10(other_samples_prob_all[0:-counter_num_other_samples])
+    other_samples_freq_all = np.log10(other_samples_freq_all[0:-counter_num_other_samples])
+    plt.subplot(1,3,2)
+    plt.hist(other_samples_freq_all)
+    
+    #sbplt[1].loglog(fake_samples_freq[new_sample==1],fake_samples_prob[new_sample==1],'xr',basex=10)
+    #sbplt[1].loglog(equal_line,equal_line,basex=10)
+
+
+    #sbplt[1].set_xlabel('frequencies of samples in generated dataset')
+    #sbplt[1].set_ylabel('theoretical probabilities')
+    #sbplt[1].set_title(str(np.sum(fake_samples_freq[fake_samples_prob==0])))  
+
+    sbplt[2].hist(num_of_impossible_samples)     
+    f.savefig(name + 'samples_probabilities.png',dpi=300, bbox_inches='tight')
+    f.savefig(name + 'samples_probabilities.svg',dpi=300, bbox_inches='tight') 
+    plt.close()
+        
+    num_rows = 6
+    num_cols = 6
+    fig,sbplt = plt.subplots(num_rows,num_cols)
+    for ind_pl in range(int(num_rows*num_rows)):
+        if ind_pl<num_rows*num_cols/2:
+            sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].plot(new_fake_samples[int(ind_pl),:],'b')
+            sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].axis('off')
+        else:
+            sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].plot(impossible_fake_samples[int(ind_pl),:],'r')
+            sbplt[int(np.floor(ind_pl/num_rows))][ind_pl%num_cols].axis('off')
+    
+    fig.savefig(name + 'new_and_impossible_samples.png',dpi=300, bbox_inches='tight')
+    fig.savefig(name + 'new_and_impossible_samples.svg',dpi=300, bbox_inches='tight') 
+
+
+def get_new_and_impossible_samples(fake_samples,theoretical_samples,real_samples,theoretical_probs):
+    fake_samples_prob = np.zeros((np.shape(fake_samples)[0],))
+    fake_samples_freq = np.zeros((np.shape(fake_samples)[0],))
+    new_sample =  np.zeros((np.shape(fake_samples)[0],))
+    for ind_s in range(np.shape(fake_samples)[0]):
+        #get theoretical probability of sample
+        sample = fake_samples[ind_s,:]
+        sample_mat = np.tile(sample,(np.shape(theoretical_samples)[0],1))
+        compare_mat = np.sum(np.abs(theoretical_samples-sample_mat),axis=1)
+        if np.count_nonzero(compare_mat==0)==1:
+            fake_samples_prob[ind_s] = theoretical_probs[np.nonzero(compare_mat==0)]
+        elif np.count_nonzero(compare_mat==0)!=0:
+            raise ValueError("utils, line 541")
+    
+        #calculate frequency of the sample in the fake dataset
+        sample_mat = np.tile(sample,(np.shape(fake_samples)[0],1))
+        compare_mat = np.sum(np.abs(fake_samples-sample_mat),axis=1)
+        fake_samples_freq[ind_s] = np.count_nonzero(compare_mat==0)/np.shape(fake_samples)[0]  
+    
+        #check whether the sample was already in the real samples dataset
+        sample_mat = np.tile(sample,(np.shape(real_samples)[0],1))
+        compare_mat = np.sum(np.abs(real_samples-sample_mat),axis=1)
+        new_sample[ind_s] = np.count_nonzero(compare_mat==0)==0
+
+    return(fake_samples_prob,fake_samples_freq,new_sample)
+
+def get_more_real_samples_gaussian_no_refrPer(firing_rate=0.5,num_classes=1,num_bins=28,num_samples=2048,classes_proportion='equal'):
+   
+    
+    noise = 0.01*firing_rate
+    margin = 6 #num bins from the middle one that the response peaks will span (see line 389)
+    std_resp = 4 #std of the gaussian defining the firing rates
+    if classes_proportion=='equal':
+        mat_prop_classes = np.ones((num_classes,))/num_classes
+    elif classes_proportion=='7030':    
+        mat_prop_classes = [0.7,0.3]
+    else:
+        raise ValueError("Unknown dataset '" + classes_proportion + "'")
+        
+        
+    t = np.arange(num_bins)
+    
+    peaks1 = np.linspace(int(num_bins/2)-margin,int(num_bins/2)+margin,num_classes)
+    X =np.zeros((num_samples,num_bins))
+    
+    for ind in range(num_samples):
+        stim = np.random.choice(num_classes,p=mat_prop_classes)
+        fr = firing_rate*np.exp(-(t-peaks1[stim])**2/std_resp**2) + np.random.normal(0,noise,(1,num_bins))
+        fr[fr<0] = 0
+        r = fr > np.random.random(fr.shape)
+        r = r.astype(float)
+        r[r>0] = 1
+    
+        X[ind,:] = r
+        
+    return(X)

@@ -7,6 +7,7 @@ import tensorflow as tf
 
 import utils
 from model import DCGAN
+import ops
 
 folder_name = "samples_dataset_gaussian_fr_num_classes_1_propClasses_equal_num_samples_2048_num_bins_28_ref_period_-1_firing_rate_0.5_iteration_18"
 
@@ -34,7 +35,8 @@ def generate_random(n_samples=2048, output_height=28):
             z_sample = np.random.uniform(-1, 1, size=(dcgan.batch_size, dcgan.z_dim))
             samples[n*dcgan.batch_size:(n+1)*dcgan.batch_size] = np.squeeze(sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample}))
 
-    return samples
+    tf.reset_default_graph()
+    return ops.binarize(samples).astype(np.bool)
 
 def frequency_table(a):
     num_samples = a.shape[0]
@@ -66,11 +68,12 @@ def kl_term(px, qx):
     else:
         return 0
     
-def full_distance_matrix(n_real, n_fake):
+def full_distance_matrix(n_real, n_fake, n_random):
     real = [frequency_table(generate_real()) for each in range(n_real)]
     fake = [frequency_table(generate_fake()) for each in range(n_fake)]
+    random = [frequency_table(generate_random()) for each in range(n_random)]
     print("Done generating stuff")
-    return pairwise_distances(real + fake)
+    return pairwise_distances(real + fake + random)
 
     
 def pairwise_distances(ps):

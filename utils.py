@@ -652,7 +652,7 @@ def plot_probabilities(data,name,firing_rate,num_classes,num_bins,num_samples,cl
     impossible_fake_samples = fake_samples[fake_samples_prob==0,:]
     
     #get more real datasets
-    num_real_dataset = 50
+    num_real_dataset = 1000
     equal_line =   np.linspace(0.0005,0.005,10000)
     num_of_impossible_samples = np.zeros((num_real_dataset,))
     counter = 0
@@ -681,13 +681,13 @@ def plot_probabilities(data,name,firing_rate,num_classes,num_bins,num_samples,cl
     other_samples_prob_all_log = np.log10(other_samples_prob_all)
     other_samples_freq_all_log = np.log10(other_samples_freq_all) 
     aux = np.unique(other_samples_freq_all_log)
-    bin_size = np.min(np.diff(aux))
+    bin_size = 2*np.min(np.diff(aux))
     edges_x = np.unique(np.concatenate((aux-bin_size/2,aux+bin_size/2)))
-    print(edges_x)
-    bin_size = 0.1
-    edges_y = np.linspace(np.min(other_samples_prob_all_log),np.max(other_samples_prob_all_log),10)
+    
+    edges_y = np.linspace(np.min(other_samples_prob_all_log)-0.1,np.max(other_samples_prob_all_log)+0.1,10)
     my_cmap = plt.cm.gray
-    sbplt[1].hist2d(other_samples_freq_all_log,other_samples_prob_all_log,bins=[edges_x, edges_y],cmap = my_cmap)#
+    _,_,_,Image = sbplt[1].hist2d(other_samples_freq_all_log,other_samples_prob_all_log,bins=[edges_x, edges_y],cmap = my_cmap)#
+    plt.colorbar(Image)
     
     
     new_fake_samples_freq = fake_samples_freq[new_sample==1]
@@ -699,14 +699,24 @@ def plot_probabilities(data,name,firing_rate,num_classes,num_bins,num_samples,cl
     new_fake_samples_prob_log = np.log10(new_fake_samples_prob)
     new_fake_samples_freq_log = np.log10(new_fake_samples_freq)
             
+    impossible_samples_probs = {'other_samples_freq_all_log':other_samples_freq_all_log,'other_samples_prob_all_log':other_samples_prob_all_log,\
+            'edges_x':edges_x,'edges_y':edges_y,'new_fake_samples_freq_log':new_fake_samples_freq_log,'new_fake_samples_prob_log':new_fake_samples_prob_log}
+    np.savez(name + 'bis.npz', **impossible_samples_probs)
+    sbplt[1].plot(new_fake_samples_freq_log,new_fake_samples_prob_log,'xr',markersize=2)
+    ticks = sbplt[1].get_xticks()
+    labels = []
+    for ind_tck in range(len(ticks)):
+        labels.append('$10^{'+str(ticks[ind_tck]) +'}$')
+   
+    sbplt[1].set_xticklabels(labels)
     
-    sbplt[1].plot(new_fake_samples_freq_log,new_fake_samples_prob_log,'xr')
-    #sbplt[1].loglog(equal_line,equal_line,basex=10)
+    ticks = sbplt[1].get_yticks()
+    labels = []
+    for ind_tck in range(len(ticks)):
+        labels.append('$10^{'+str(ticks[ind_tck]) +'}$')
+   
+    sbplt[1].set_yticklabels(labels)
 
-
-    #sbplt[1].set_xlabel('frequencies of samples in generated dataset')
-    #sbplt[1].set_ylabel('theoretical probabilities')
-    #sbplt[1].set_title(str(np.sum(fake_samples_freq[fake_samples_prob==0])))  
 
     sbplt[2].hist(num_of_impossible_samples)  
     sbplt[2].plot(np.sum(fake_samples_freq[fake_samples_prob==0])*np.ones((10,1)),np.arange(10),'r')

@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from model import DCGAN
-from utils import pp, get_samples_autocorrelogram, get_samples, compare_trainings
+from utils import pp, get_samples_autocorrelogram, get_samples
 from dataprovider import DataProvider
 
 import tensorflow as tf
@@ -94,16 +94,13 @@ def main(_):
       if not dcgan.load(FLAGS.checkpoint_dir,FLAGS.training_stage):
         raise Exception("[!] Train a model first, then run test mode")      
 
-    # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
-    #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
-    #                 [dcgan.h2_w, dcgan.h2_b, dcgan.g_bn2],
-    #                 [dcgan.h3_w, dcgan.h3_b, dcgan.g_bn3],
-    #                 [dcgan.h4_w, dcgan.h4_b, None])
-
+  
     # Below is the code for visualization
+    #plot statistics
     get_samples_autocorrelogram(sess, dcgan,'fake',FLAGS,0,0)
+    #plot some generated samples
     get_samples(sess, dcgan,FLAGS.sample_dir)
-    #compare_trainings(FLAGS.sample_dir,'training errors')
+    
 
 if __name__ == '__main__':
   tf.app.run()

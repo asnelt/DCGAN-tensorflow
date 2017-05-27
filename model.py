@@ -392,7 +392,7 @@ class DCGAN(object):
           ops.nn_resize(h2, [self.batch_size, s_h, 1, self.output_depth], name='g_h3'))
   
   #this function is the same as the generator, but it is just retrieve samples 
-  #(note the train=false of lines 335 and 340)
+  #(note the train=false of lines 407 and 411)
   def sampler(self, z):
     with tf.variable_scope("generator") as scope:
       scope.reuse_variables()

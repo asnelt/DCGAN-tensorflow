@@ -5,11 +5,12 @@ Created on Thu May 18 14:06:17 2017
 
 @author: manuel
 """
-
+#this script runs the function that plots the summary figures for the best result obtained with the configuration: 
+    #gaussian, 1 class, 2048 samples, 28 bins, no refractory period and firing rate = 0.5
 import numpy as np
 import utils
 main_folder = '/home/manuel/DCGAN-tensorflow/'
-folder_final_figures = main_folder + 'best fits'
+folder_final_figures = main_folder + 'best fits tests'
 firing_rate=0.5
 num_samples=2048
 num_bins=28
